@@ -1,5 +1,8 @@
 #import RPi.GPIO as GPIO
-import time 
+import sys
+import fcntl
+import errno
+import time
 import datetime
 import logging
 
@@ -11,7 +14,7 @@ valves_pins = [2, 3]
 
 programs = [
             {'start_time': datetime.datetime.strptime('10:51:00', '%H:%M:%S'), 'valves_times': [1, 2]},
-            {'start_time': datetime.datetime.strptime('11:33:00', '%H:%M:%S'), 'valves_times': [3, 4]}
+            {'start_time': datetime.datetime.strptime('14:02:00', '%H:%M:%S'), 'valves_times': [3, 4]}
            ]
 
 logger = logging.getLogger('Waterflow_Log')
@@ -37,7 +40,9 @@ def recalcNextProgram(current_time):
 
     # Find if next program is today
     for idx, program in enumerate(programs):
-        candidate = current_time.replace(hour=program['start_time'].hour, minute=program['start_time'].minute)
+        candidate = current_time.replace(hour=program['start_time'].hour,
+                                         minute=program['start_time'].minute,
+                                         second=0)
         if candidate > current_time:
             next_program_time = candidate
             program_number = idx
@@ -46,7 +51,9 @@ def recalcNextProgram(current_time):
     # If its not today, it will be tomorrow
     if next_program_time is None:
         next_program_time = current_time + datetime.timedelta(days=1)
-        next_program_time = next_program_time.replace(hour=programs[0]['start_time'].hour, minute=programs[0]['start_time'].minute)
+        next_program_time = next_program_time.replace(hour=programs[0]['start_time'].hour,
+                                                      minute=programs[0]['start_time'].minute,
+                                                      second=0)
         program_number = 0
 
     return next_program_time, program_number
@@ -66,24 +73,42 @@ def executeProgram(program_number):
     #GPIO.output(INVERTER_RELAY_PIN, GPIO.LOW) #INVERTER always OFF after operations
     logger.info('Inverter relay OFF.')
 
+def loop():
+    with open('lastprogram.yml', 'r') as file:
+        data = file.read()
+        if data == '':
+            last_program_time = datetime.datetime.now()
+        else:
+            last_program_time = datetime.datetime.strptime(data, '%Y-%m-%d %H:%M:%S.%f')
+
+    next_program_time, program_number = recalcNextProgram(last_program_time)
+
+    current_time = datetime.datetime.now()
+
+    if current_time >= next_program_time:
+        executeProgram(program_number)
+        with open('lastprogram.yml', 'w') as file:
+            file.write(current_time.strftime('%Y-%m-%d %H:%M:%S.%f'))
+
 def main():
     logger.info('Irrigation system started.')
 
     setupGPIO()
 
-    current_time = datetime.datetime.now()
-
-    next_program_time, program_number = recalcNextProgram(current_time)
-
     while True:
-        current_time = datetime.datetime.now()
-
-        if current_time > next_program_time:
-            executeProgram(program_number)
-            next_program_time, program_number = recalcNextProgram(current_time)
-
-        time.sleep(30)
+        logger.info('Looping...')
+        loop()
+        time.sleep(5*60)
 
 
 if __name__ == "__main__":
+    # # Avoid several instances running at the same time
+    # f = open('lock', 'w')
+    # try:
+    #     fcntl.lockf (f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    # except IOError, e:
+    #     if e.errno == errno.EAGAIN:
+    #         sys.exit(-1)
+    #     raise
+
     main()
