@@ -4,6 +4,7 @@ import time
 import datetime
 import logging
 import yaml
+from pathlib import Path
 
 # Pins definition for the RELAYS
 INVERTER_RELAY_PIN = 1
@@ -12,7 +13,8 @@ EXTERNAL_AC_SIGNAL_PIN = 10
 logger = logging.getLogger('Waterflow_Log')
 
 def setupLogger(logfile):
-    log_path = os.path.dirname(__file__) + '/' + logfile
+    file_folder = Path(__file__).parent
+    log_path = os.path.join(file_folder, logfile)
 
     logger.setLevel(logging.INFO)
     fh = logging.FileHandler(log_path)
@@ -70,7 +72,8 @@ def executeProgram(program_number, config):
     logger.info('Inverter relay OFF.')
 
 def loop(config):
-    last_program_path = os.path.dirname(__file__) + '/' + config['lastprogrampath']
+    file_folder = Path(__file__).parent    
+    last_program_path = os.path.join(file_folder, config['lastprogrampath'])
 
     try:
         with open(last_program_path, 'r') as file:
@@ -94,7 +97,8 @@ def loop(config):
             file.write(current_time.strftime('%Y-%m-%d %H:%M:%S.%f'))
 
 def main():
-    config_yml_path = os.path.dirname(__file__) + '/config.yml'
+    file_folder = Path(__file__).parent
+    config_yml_path = os.path.join(file_folder, 'config.yml')
 
     with open(config_yml_path) as config_file:
         config = yaml.load(config_file, Loader=yaml.FullLoader)
