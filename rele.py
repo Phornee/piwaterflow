@@ -1,4 +1,5 @@
 #import RPi.GPIO as GPIO
+import os
 import time
 import datetime
 import logging
@@ -11,8 +12,10 @@ EXTERNAL_AC_SIGNAL_PIN = 10
 logger = logging.getLogger('Waterflow_Log')
 
 def setupLogger(logfile):
+    log_path = os.path.dirname(__file__) + '/' + logfile
+
     logger.setLevel(logging.INFO)
-    fh = logging.FileHandler(logfile)
+    fh = logging.FileHandler(log_path)
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
     logger.addHandler(fh)
@@ -67,7 +70,8 @@ def executeProgram(program_number, config):
     logger.info('Inverter relay OFF.')
 
 def loop(config):
-    with open('lastprogram.yml', 'r') as file:
+    last_program_path = os.path.dirname(__file__) + '/' + config['lastprogrampath']
+    with open(last_program_path, 'r') as file:
         data = file.read()
         if data == '':
             last_program_time = datetime.datetime.now()
@@ -81,18 +85,22 @@ def loop(config):
 
     if current_time >= next_program_time:
         executeProgram(program_number, config)
-        with open(config['lastprogrampath'], 'w') as file:
+        with open(last_program_path, 'w') as file:
             file.write(current_time.strftime('%Y-%m-%d %H:%M:%S.%f'))
 
 def main():
-    logger.info('Irrigation system started.')
+    config_yml_path = os.path.dirname(__file__) + '/config.yml'
 
-    with open("config.yml") as config_file:
+    with open(config_yml_path) as config_file:
         config = yaml.load(config_file, Loader=yaml.FullLoader)
+
+        setupLogger(config['logpath'])
+
+        logger.info('Irrigation system started.')
+
         for program in config['programs']:
             program['start_time'] = datetime.datetime.strptime(program['start_time'], '%H:%M:%S')
 
-        setupLogger(config['logpath'])
         setupGPIO(config['valves'])
 
         while True:

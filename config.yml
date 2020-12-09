@@ -1,5 +1,5 @@
-logpath: /home/pi/Waterflow/waterflow.log
-lastprogrampath:
+logpath: waterflow.log
+lastprogrampath: lastprogram.yml
 valves:
   - name: main
     pin: 35
@@ -7,11 +7,11 @@ valves:
     pin: 36
 
 programs:
-  - start_time : 10:51:00
+  - start_time: '10:51:00'
     valves_times:
       - 1
       - 2
-  - start_time : 14:02:00
+  - start_time: '14:02:00'
     valves_times:
       - 2
       - 3
