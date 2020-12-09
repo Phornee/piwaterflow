@@ -1,4 +1,4 @@
-#import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
 import os
 import time
 import datetime
@@ -7,7 +7,7 @@ import yaml
 from pathlib import Path
 
 # Pins definition for the RELAYS
-INVERTER_RELAY_PIN = 1
+INVERTER_RELAY_PIN = 31
 EXTERNAL_AC_SIGNAL_PIN = 10
 
 logger = logging.getLogger('Waterflow_Log')
@@ -23,12 +23,14 @@ def setupLogger(logfile):
     logger.addHandler(fh)
 
 def setupGPIO(valves):
-    # GPIO.setmode(GPIO.BCM)
+    GPIO.setmode(GPIO.BOARD)
 
-    # GPIO.setup(INVERTER_RELAY_PIN, GPIO.OUT)
-    # GPIO.setup(EXTERNAL_AC_SIGNAL_PIN, GPIO.IN)
+    GPIO.setup(INVERTER_RELAY_PIN, GPIO.OUT)
+    GPIO.output(INVERTER_RELAY_PIN, GPIO.LOW)
+    #GPIO.setup(EXTERNAL_AC_SIGNAL_PIN, GPIO.IN)
     for valve in valves:
-        #GPIO.setup(valve['pin'], GPIO.OUT)
+        GPIO.setup(valve['pin'], GPIO.OUT)
+        GPIO.output(valve['pin'], GPIO.LOW)
         pass
 
 
@@ -59,16 +61,16 @@ def recalcNextProgram(current_time, programs):
 def executeProgram(program_number, config):
 
     #if not GPIO.input(EXTERNAL_AC_SIGNAL_PIN): # If we dont have external 220V power input, then activate inverter
-    #   GPIO.output(INVERTER_RELAY_PIN, GPIO.HIGH)
+    GPIO.output(INVERTER_RELAY_PIN, GPIO.HIGH)
     logger.info('Inverter relay ON.')
     for idx, valve_time in enumerate(config['programs'][program_number]['valves_times']):
-        valve_pin = config['valves'][idx]
-        #GPIO.output(valve_pin, GPIO.HIGH)
+        valve_pin = config['valves'][idx]['pin']
+        GPIO.output(valve_pin, GPIO.HIGH)
         logger.info('Valve %s ON.' % idx)
         time.sleep(valve_time * 60)
-        #GPIO.output(valve_pin, GPIO.LOW)
+        GPIO.output(valve_pin, GPIO.LOW)
         logger.info('Valve %s OFF.' % idx)
-    #GPIO.output(INVERTER_RELAY_PIN, GPIO.LOW) #INVERTER always OFF after operations
+    GPIO.output(INVERTER_RELAY_PIN, GPIO.LOW) #INVERTER always OFF after operations
     logger.info('Inverter relay OFF.')
 
 def loop(config):
@@ -115,7 +117,7 @@ def main():
         while True:
             logger.info('Looping...')
             loop(config)
-            time.sleep(5*60)
+            time.sleep(60)
 
 
 if __name__ == "__main__":
