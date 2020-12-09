@@ -71,12 +71,17 @@ def executeProgram(program_number, config):
 
 def loop(config):
     last_program_path = os.path.dirname(__file__) + '/' + config['lastprogrampath']
-    with open(last_program_path, 'r') as file:
-        data = file.read()
-        if data == '':
-            last_program_time = datetime.datetime.now()
-        else:
+
+    try:
+        with open(last_program_path, 'r') as file:
+            data = file.read()
             last_program_time = datetime.datetime.strptime(data, '%Y-%m-%d %H:%M:%S.%f')
+    except Exception as e:
+        last_program_time = datetime.datetime.now()
+        with open(last_program_path, 'w') as file:
+            file.write(last_program_time.strftime('%Y-%m-%d %H:%M:%S.%f'))
+            logger.info('First Loop execution: Initializing "Last program" to %s.' % last_program_time.strftime(
+                        '%Y-%m-%d %H:%M:%S.%f'))
 
     next_program_time, program_number = recalcNextProgram(last_program_time, config['programs'])
     logger.info('Next program start at %s.' % next_program_time.strftime('%Y-%m-%d %H:%M:%S.%f'))
