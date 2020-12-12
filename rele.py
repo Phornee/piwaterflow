@@ -24,6 +24,7 @@ def setupLogger(logfile):
 
 def setupGPIO(valves):
     GPIO.setmode(GPIO.BOARD)
+    GPIO.setwarnings(False)
 
     GPIO.setup(INVERTER_RELAY_PIN, GPIO.OUT)
     GPIO.output(INVERTER_RELAY_PIN, GPIO.LOW)
@@ -112,13 +113,19 @@ def main():
         for program in config['programs']:
             program['start_time'] = datetime.datetime.strptime(program['start_time'], '%H:%M:%S')
 
-        setupGPIO(config['valves'])
+        try:
+            setupGPIO(config['valves'])
 
-        while True:
-            logger.info('Looping...')
-            loop(config)
-            time.sleep(60)
-
+            while True:
+                logger.info('Looping...')
+                loop(config)
+                time.sleep(60)
+        except KeyboardInterrupt:
+            logger.info('Exiting gently...')
+        except Exception as e:
+            logger.info(e)
+        finally:
+            GPIO.cleanup()
 
 if __name__ == "__main__":
     # # Avoid several instances running at the same time

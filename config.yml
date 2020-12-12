@@ -1,17 +1,16 @@
-logpath: waterflow.log
 lastprogrampath: lastprogram.yml
-valves:
-  - name: main
-    pin: 33
-  - name: grass
-    pin: 35
-
+logpath: waterflow.log
 programs:
-  - start_time: '10:51:00'
-    valves_times:
-      - 1
-      - 2
-  - start_time: '17:08:00'
-    valves_times:
-      - 1
-      - 1
+- start_time: 09:51:00
+  valves_times:
+  - 1
+  - 2
+- start_time: '19:43:00'
+  valves_times:
+  - 1
+  - 1
+valves:
+- name: main
+  pin: 33
+- name: grass
+  pin: 35
