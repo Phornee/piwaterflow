@@ -5,6 +5,7 @@ import datetime
 import logging
 import yaml
 from pathlib import Path
+from shutil import copyfile
 
 # Pins definition for the RELAYS
 INVERTER_RELAY_PIN = 31
@@ -102,6 +103,10 @@ def loop(config):
 def readConfig():
     file_folder = Path(__file__).parent
     config_yml_path = os.path.join(file_folder, 'config.yml')
+
+    if not os.path.isfile(config_yml_path):
+        config_template_yml_path = os.path.join(file_folder, 'config-template.yml')
+        copyfile(config_template_yml_path, config_yml_path)
 
     with open(config_yml_path, 'r') as config_file:
         config = yaml.load(config_file, Loader=yaml.FullLoader)
