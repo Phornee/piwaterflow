@@ -104,6 +104,7 @@ def readConfig():
     file_folder = Path(__file__).parent
     config_yml_path = os.path.join(file_folder, 'config.yml')
 
+    # If config file doesn't exist yet, create it from the template
     if not os.path.isfile(config_yml_path):
         config_template_yml_path = os.path.join(file_folder, 'config-template.yml')
         copyfile(config_template_yml_path, config_yml_path)
@@ -111,8 +112,12 @@ def readConfig():
     with open(config_yml_path, 'r') as config_file:
         config = yaml.load(config_file, Loader=yaml.FullLoader)
 
+        # Convert the date from string to datetime object
         for program in config['programs']:
             program['start_time'] = datetime.datetime.strptime(program['start_time'], '%H:%M:%S')
+
+        # Sort the programs by time
+        config['programs'].sort(key=lambda prog: prog['start_time'])
         return config
 
 def main():
@@ -129,11 +134,9 @@ def main():
 
             config = readConfig()
             loop(config)
-            time.sleep(60)
+            time.sleep(config['loop_freq'] * 60)
     except KeyboardInterrupt:
         logger.info('Exiting gently...')
-    #except Exception as e:
-    #    logger.info(e)
     finally:
         GPIO.cleanup()
 
