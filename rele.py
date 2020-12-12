@@ -103,29 +103,31 @@ def main():
     file_folder = Path(__file__).parent
     config_yml_path = os.path.join(file_folder, 'config.yml')
 
-    with open(config_yml_path) as config_file:
+    with open(config_yml_path, 'r') as config_file:
         config = yaml.load(config_file, Loader=yaml.FullLoader)
-
         setupLogger(config['logpath'])
 
-        logger.info('Irrigation system started.')
+    logger.info('Irrigation system started.')
 
-        for program in config['programs']:
-            program['start_time'] = datetime.datetime.strptime(program['start_time'], '%H:%M:%S')
+    for program in config['programs']:
+        program['start_time'] = datetime.datetime.strptime(program['start_time'], '%H:%M:%S')
 
-        try:
-            setupGPIO(config['valves'])
+    try:
+        setupGPIO(config['valves'])
 
-            while True:
-                logger.info('Looping...')
+        while True:
+            logger.info('Looping...')
+
+            with open(config_yml_path, 'r') as config_file:  # Read again config every loop, to get updates
+                config = yaml.load(config_file, Loader=yaml.FullLoader)
                 loop(config)
-                time.sleep(60)
-        except KeyboardInterrupt:
-            logger.info('Exiting gently...')
-        except Exception as e:
-            logger.info(e)
-        finally:
-            GPIO.cleanup()
+            time.sleep(60)
+    except KeyboardInterrupt:
+        logger.info('Exiting gently...')
+    except Exception as e:
+        logger.info(e)
+    finally:
+        GPIO.cleanup()
 
 if __name__ == "__main__":
     # # Avoid several instances running at the same time
