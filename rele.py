@@ -28,7 +28,7 @@ def setupGPIO(valves):
 
     GPIO.setup(INVERTER_RELAY_PIN, GPIO.OUT)
     GPIO.output(INVERTER_RELAY_PIN, GPIO.LOW)
-    #GPIO.setup(EXTERNAL_AC_SIGNAL_PIN, GPIO.IN)
+    GPIO.setup(EXTERNAL_AC_SIGNAL_PIN, GPIO.IN)
     for valve in valves:
         GPIO.setup(valve['pin'], GPIO.OUT)
         GPIO.output(valve['pin'], GPIO.LOW)
@@ -99,33 +99,36 @@ def loop(config):
         with open(last_program_path, 'w') as file:
             file.write(current_time.strftime('%Y-%m-%d %H:%M:%S.%f'))
 
-def main():
+def readConfig():
     file_folder = Path(__file__).parent
     config_yml_path = os.path.join(file_folder, 'config.yml')
 
     with open(config_yml_path, 'r') as config_file:
         config = yaml.load(config_file, Loader=yaml.FullLoader)
-        setupLogger(config['logpath'])
+
+        for program in config['programs']:
+            program['start_time'] = datetime.datetime.strptime(program['start_time'], '%H:%M:%S')
+        return config
+
+def main():
+    config = readConfig()
+
+    setupLogger(config['logpath'])
 
     logger.info('Irrigation system started.')
-
-    for program in config['programs']:
-        program['start_time'] = datetime.datetime.strptime(program['start_time'], '%H:%M:%S')
-
     try:
         setupGPIO(config['valves'])
 
         while True:
             logger.info('Looping...')
 
-            with open(config_yml_path, 'r') as config_file:  # Read again config every loop, to get updates
-                config = yaml.load(config_file, Loader=yaml.FullLoader)
-                loop(config)
+            config = readConfig()
+            loop(config)
             time.sleep(60)
     except KeyboardInterrupt:
         logger.info('Exiting gently...')
-    except Exception as e:
-        logger.info(e)
+    #except Exception as e:
+    #    logger.info(e)
     finally:
         GPIO.cleanup()
 

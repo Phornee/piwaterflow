@@ -1,7 +1,7 @@
 lastprogrampath: lastprogram.yml
 logpath: waterflow.log
 programs:
-- start_time: 09:51:00
+- start_time: '09:51:00'
   valves_times:
   - 1
   - 2
