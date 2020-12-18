@@ -135,19 +135,25 @@ def main():
             config = readConfig()
             loop(config)
             time.sleep(config['loop_freq'] * 60)
+
+            if os.path.isfile("stop"):
+                os.remove("stop")
+                logger.info('Exiting loop by explicit request...')
+                break
+
     except KeyboardInterrupt:
         logger.info('Exiting gently...')
     finally:
         GPIO.cleanup()
 
 if __name__ == "__main__":
-    # # Avoid several instances running at the same time
-    # f = open('lock', 'w')
-    # try:
-    #     fcntl.lockf (f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    # except IOError, e:
-    #     if e.errno == errno.EAGAIN:
-    #         sys.exit(-1)
-    #     raise
+    import sys
 
-    main()
+    if sys.platform.startswith("win"):
+        main()
+    elif sys.platform.startswith("linux"):
+        import daemon
+
+        with daemon.DaemonContext():
+            main()
+
