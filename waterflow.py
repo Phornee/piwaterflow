@@ -3,7 +3,7 @@ import os
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from ManagedClass import ManagedClass
+from ManagedClass.ManagedClass import ManagedClass
 
 # Pins definition for the RELAYS
 INVERTER_RELAY_PIN = 31
@@ -44,21 +44,23 @@ class Waterflow(ManagedClass):
 
         # Find if next program is today
         for idx, program in enumerate(programs):
-            candidate = current_time.replace(hour=program['start_time'].hour,
-                                             minute=program['start_time'].minute,
-                                             second=0)
-            if candidate > current_time:
-                next_program_time = candidate
-                program_number = idx
-                break
+            if program['enabled'] == True:
+                candidate = current_time.replace(hour=program['start_time'].hour,
+                                                 minute=program['start_time'].minute,
+                                                 second=0)
+                if candidate > current_time:
+                    next_program_time = candidate
+                    program_number = idx
+                    break
 
-        # If its not today, it will be tomorrow
+        # If its not today, it could be tomorrow
         if next_program_time is None:
-            next_program_time = current_time + timedelta(days=1)
-            next_program_time = next_program_time.replace(hour=programs[0]['start_time'].hour,
-                                                          minute=programs[0]['start_time'].minute,
-                                                          second=0)
-            program_number = 0
+            if programs[0]['enabled'] == True:
+                next_program_time = current_time + timedelta(days=1)
+                next_program_time = next_program_time.replace(hour=programs[0]['start_time'].hour,
+                                                              minute=programs[0]['start_time'].minute,
+                                                              second=0)
+                program_number = 0
 
         return next_program_time, program_number
 
@@ -135,20 +137,23 @@ class Waterflow(ManagedClass):
 
                 new_next_program_time, program_number = self.recalcNextProgram(last_program_time, self.config['programs'])
 
-                if (new_next_program_time != old_next_program_time):
-                    self.logger.info('Next program: %s.' % new_next_program_time.strftime('%Y-%m-%d %H:%M:%S'))
-
-                current_time = datetime.now()
-
-                if current_time >= new_next_program_time:
-                    # ------------------------------------
-                    self.executeProgram(program_number)
-                    # ------------------------------------
-                    self.writeLastProgramTime([current_time.strftime('%Y-%m-%d %H:%M:%S.%f\n'),
-                                               new_next_program_time.strftime('%Y-%m-%d %H:%M:%S.%f\n')])
+                if new_next_program_time is None:
+                    self.logger.info('NO active program!')
                 else:
-                    self.writeLastProgramTime([last_program_time.strftime('%Y-%m-%d %H:%M:%S.%f\n'),
-                                               new_next_program_time.strftime('%Y-%m-%d %H:%M:%S.%f\n')])
+                    if (new_next_program_time != old_next_program_time): # If "next program time" has changed, reflect in log
+                        self.logger.info('Next program: %s.' % new_next_program_time.strftime('%Y-%m-%d %H:%M:%S'))
+
+                    current_time = datetime.now()
+
+                    if current_time >= new_next_program_time:
+                        # ------------------------------------
+                        self.executeProgram(program_number)
+                        # ------------------------------------
+                        self.writeLastProgramTime([current_time.strftime('%Y-%m-%d %H:%M:%S.%f\n'),
+                                                   new_next_program_time.strftime('%Y-%m-%d %H:%M:%S.%f\n')])
+                    else:
+                        self.writeLastProgramTime([last_program_time.strftime('%Y-%m-%d %H:%M:%S.%f\n'),
+                                                   new_next_program_time.strftime('%Y-%m-%d %H:%M:%S.%f\n')])
 
             except Exception as e:
                 self.logger.error(f"Exception looping: {e}")
