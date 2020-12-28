@@ -3,9 +3,9 @@ import os
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from ManagedClass.ManagedClass import ManagedClass
+from ManagedClass import ManagedClass
 
-class Waterflow(ManagedClass):
+class Waterflow(ManagedClass.ManagedClass):
 
     def __init__(self):
         super().__init__(classname='waterflow', execpath=__file__)

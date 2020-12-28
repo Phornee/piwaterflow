@@ -3,3 +3,7 @@
 /config.yml
 /lock
 /token
+/PiWaterflow/waterflow.log
+/PiWaterflow/token
+/PiWaterflow/config.yml
+/PiWaterflow/lastprogram.yml
