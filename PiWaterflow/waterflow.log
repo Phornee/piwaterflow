@@ -1,0 +1,105 @@
+2020-12-21 19:18:17-Irrigation system started.
+2020-12-21 19:18:17-Looping...
+2020-12-21 19:18:28-First Loop execution: Initializing "Last program" to 2020-12-21 19:18:25.569845.
+2020-12-21 19:18:32-Next program: 2020-12-21 19:30:00.
+2020-12-21 19:18:49-Irrigation system started.
+2020-12-21 19:18:49-Looping...
+2020-12-21 19:19:45-Irrigation system started.
+2020-12-21 19:19:45-Looping...
+2020-12-21 19:30:45-Inverter relay ON.
+2020-12-21 19:30:45-Valve 0 ON.
+2020-12-21 19:31:45-Valve 0 OFF.
+2020-12-21 19:31:45-Valve 1 ON.
+2020-12-21 19:32:45-Valve 1 OFF.
+2020-12-21 19:32:45-Inverter relay OFF.
+2020-12-21 19:33:45-Next program: 2020-12-22 11:00:00.
+2020-12-22 08:52:43-Irrigation system started.
+2020-12-22 08:52:43-Looping...
+2020-12-22 11:00:49-Inverter relay ON.
+2020-12-22 11:00:49-Valve 0 ON.
+2020-12-22 11:01:49-Valve 0 OFF.
+2020-12-22 11:01:49-Valve 1 ON.
+2020-12-22 11:02:49-Valve 1 OFF.
+2020-12-22 11:02:49-Inverter relay OFF.
+2020-12-22 11:03:49-Next program: 2020-12-22 19:30:00.
+2020-12-22 15:48:51-Next program: 2020-12-22 16:00:00.
+2020-12-22 16:00:51-Inverter relay ON.
+2020-12-22 16:00:51-Valve 0 ON.
+2020-12-22 16:01:51-Valve 0 OFF.
+2020-12-22 16:01:51-Valve 1 ON.
+2020-12-22 16:02:51-Valve 1 OFF.
+2020-12-22 16:02:51-Inverter relay OFF.
+2020-12-22 16:03:51-Next program: 2020-12-23 11:00:00.
+2020-12-23 11:34:38-Irrigation system started.
+2020-12-23 11:34:38-Looping...
+2020-12-23 11:34:38-Inverter relay ON.
+2020-12-23 11:34:38-Valve 0 ON.
+2020-12-23 11:35:38-Valve 0 OFF.
+2020-12-23 11:35:38-Valve 1 ON.
+2020-12-23 11:36:38-Valve 1 OFF.
+2020-12-23 11:36:38-Inverter relay OFF.
+2020-12-23 11:37:38-Next program: 2020-12-23 16:00:00.
+2020-12-23 16:32:27-Error connecting to MariaDB Platform: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'VALUES(null, 'running', UTC_TIMESTAMP())' at line 1
+2020-12-23 16:46:44-Error connecting to MariaDB Platform: Cursor doesn't have a result set
+2020-12-23 16:47:24-Error connecting to MariaDB Platform: Cursor doesn't have a result set
+2020-12-23 16:51:18-Error connecting to MariaDB Platform: Access denied for user 'pi'@'Buhardilla-1.home' (using password: YES)
+2020-12-23 17:47:36-Error getting DB Lock: 'mariadb.connection' object has no attribute 'begin'
+2020-12-23 17:47:44-Error getting DB Lock: 'mariadb.connection' object has no attribute 'begin'
+2020-12-23 17:48:22-Error getting DB Lock: 'mariadb.connection' object has no attribute 'begin'
+2020-12-23 17:48:29-Error getting DB Lock: 'mariadb.connection' object has no attribute 'begin'
+2020-12-23 18:13:29-Inverter relay ON.
+2020-12-23 18:13:29-Valve 0 ON.
+2020-12-23 18:14:29-Valve 0 OFF.
+2020-12-23 18:14:29-Valve 1 ON.
+2020-12-23 18:15:29-Valve 1 OFF.
+2020-12-23 18:15:29-Inverter relay OFF.
+2020-12-24 11:09:31-Next program: 2020-12-24 11:00:00.
+2020-12-24 11:09:32-Inverter relay ON.
+2020-12-24 11:09:32-Valve 0 ON.
+2020-12-24 11:10:32-Valve 0 OFF.
+2020-12-24 11:10:32-Valve 1 ON.
+2020-12-24 11:11:32-Valve 1 OFF.
+2020-12-24 11:11:32-Inverter relay OFF.
+2020-12-24 11:21:14-Next program: 2020-12-24 16:00:00.
+2020-12-24 19:11:57-Inverter relay ON.
+2020-12-24 19:11:57-Valve 0 ON.
+2020-12-24 19:12:57-Valve 0 OFF.
+2020-12-24 19:12:57-Valve 1 ON.
+2020-12-24 19:13:57-Valve 1 OFF.
+2020-12-24 19:13:57-Inverter relay OFF.
+2020-12-26 11:29:46-Next program: 2020-12-25 11:00:00.
+2020-12-26 11:29:51-Inverter relay ON.
+2020-12-26 11:29:52-Valve 0 ON.
+2020-12-26 11:30:55-Valve 0 OFF.
+2020-12-26 11:30:57-Valve 1 ON.
+2020-12-26 11:31:58-Valve 1 OFF.
+2020-12-26 11:32:00-Inverter relay OFF.
+2020-12-28 10:11:29-Next program: 2020-12-27 11:00:00.
+2020-12-28 10:11:29-Inverter relay ON.
+2020-12-28 10:11:29-Valve 0 ON.
+2020-12-28 10:12:29-Valve 0 OFF.
+2020-12-28 10:12:29-Valve 1 ON.
+2020-12-28 10:13:29-Valve 1 OFF.
+2020-12-28 10:13:29-Inverter relay OFF.
+2020-12-28 11:23:25-Next program: 2020-12-29 11:25:00.
+2020-12-28 11:27:47-Next program: 2020-12-28 11:25:00.
+2020-12-28 11:27:47-Inverter relay ON.
+2020-12-28 11:27:47-Valve 0 ON.
+2020-12-28 11:28:47-Valve 0 OFF.
+2020-12-28 11:28:47-Valve 1 ON.
+2020-12-28 11:29:47-Valve 1 OFF.
+2020-12-28 11:29:47-Inverter relay OFF.
+2020-12-28 11:31:08-Next program: 2020-12-29 11:25:00.
+2020-12-28 11:34:30-Exception looping: 'NoneType' object has no attribute 'strftime'
+2020-12-28 11:34:39-NO active program!
+2020-12-28 11:35:42-Next program: 2020-12-28 16:00:00.
+2020-12-28 16:01:46-Inverter relay ON.
+2020-12-28 16:01:46-Valve 0 ON.
+2020-12-28 16:02:46-Valve 0 OFF.
+2020-12-28 16:02:46-Valve 1 ON.
+2020-12-28 16:04:51-Inverter relay ON.
+2020-12-28 16:04:51-Valve 0 ON.
+2020-12-28 16:05:51-Valve 0 OFF.
+2020-12-28 16:05:51-Valve 1 ON.
+2020-12-28 16:06:51-Valve 1 OFF.
+2020-12-28 16:06:51-Inverter relay OFF.
