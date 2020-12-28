@@ -1,12 +1,15 @@
-lastprogrampath: lastprogram.yml
 logpath: waterflow.log
 loop_freq: 1
+inverter_relay_pin: 31
+external_ac_signal_pin: 10
 programs:
-- start_time: '09:51:00'
+- enabled: true
+  start_time: '09:51:00'
   valves_times:
   - 1
   - 2
-- start_time: '19:43:00'
+- enabled: true
+  start_time: '19:43:00'
   valves_times:
   - 1
   - 1

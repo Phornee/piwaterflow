@@ -5,11 +5,6 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from ManagedClass.ManagedClass import ManagedClass
 
-# Pins definition for the RELAYS
-INVERTER_RELAY_PIN = 31
-EXTERNAL_AC_SIGNAL_PIN = 10
-
-
 class Waterflow(ManagedClass):
 
     def __init__(self):
@@ -29,9 +24,9 @@ class Waterflow(ManagedClass):
         GPIO.setmode(GPIO.BOARD)
         GPIO.setwarnings(False)
 
-        GPIO.setup(INVERTER_RELAY_PIN, GPIO.OUT)
-        GPIO.output(INVERTER_RELAY_PIN, GPIO.LOW)
-        GPIO.setup(EXTERNAL_AC_SIGNAL_PIN, GPIO.IN)
+        GPIO.setup(self.config['inverter_relay_pin'], GPIO.OUT)
+        GPIO.output(self.config['inverter_relay_pin'], GPIO.LOW)
+        GPIO.setup(self.config['external_ac_signal_pin'], GPIO.IN)
         for valve in valves:
             GPIO.setup(valve['pin'], GPIO.OUT)
             GPIO.output(valve['pin'], GPIO.LOW)
@@ -65,9 +60,9 @@ class Waterflow(ManagedClass):
         return next_program_time, program_number
 
     def executeProgram(self, program_number):
-
-        #if not GPIO.input(EXTERNAL_AC_SIGNAL_PIN): # If we dont have external 220V power input, then activate inverter
-        GPIO.output(INVERTER_RELAY_PIN, GPIO.HIGH)
+        #inverter_enable =  not GPIO.input(self.config['external_ac_signal_pin'])
+        #if inverter_enable: # If we dont have external 220V power input, then activate inverter
+        GPIO.output(self.config['inverter_relay_pin'], GPIO.HIGH)
         self.logger.info('Inverter relay ON.')
         for idx, valve_time in enumerate(self.config['programs'][program_number]['valves_times']):
             valve_pin = self.config['valves'][idx]['pin']
@@ -76,12 +71,13 @@ class Waterflow(ManagedClass):
             time.sleep(valve_time * 60)
             GPIO.output(valve_pin, GPIO.LOW)
             self.logger.info('Valve %s OFF.' % idx)
-        GPIO.output(INVERTER_RELAY_PIN, GPIO.LOW) #INVERTER always OFF after operations
+        #if inverter_enable: # If we dont have external 220V power input, then activate inverter
+        GPIO.output(self.config['inverter_relay_pin'], GPIO.LOW) #INVERTER always OFF after operations
         self.logger.info('Inverter relay OFF.')
 
     def readLastProgramTime(self):
         file_folder = Path(__file__).parent
-        last_program_path = os.path.join(file_folder, self.config['lastprogrampath'])
+        last_program_path = os.path.join(file_folder, 'lastprogram.yml')
 
         try:
             with open(last_program_path, 'r') as file:
@@ -100,7 +96,7 @@ class Waterflow(ManagedClass):
 
     def writeLastProgramTime(self, timelist):
         file_folder = Path(__file__).parent
-        last_program_path = os.path.join(file_folder, self.config['lastprogrampath'])
+        last_program_path = os.path.join(file_folder, 'lastprogram.yml')
         with open(last_program_path, 'w') as file:
             file.writelines(timelist)
 
@@ -115,6 +111,7 @@ class Waterflow(ManagedClass):
         else:
             modified_time = datetime.fromtimestamp(os.path.getmtime('lock'))
             if (datetime.utcnow() - modified_time) > timedelta(minutes=20):
+                self.warning.info('Lock expired: Last loop ended abnormally?.')
                 return True
         return False
 
@@ -124,13 +121,23 @@ class Waterflow(ManagedClass):
         else:
             self.logger.error(f"Could not release lock.")
 
-    def isLoopingCorrectly(self):
-        last_program_time, old_next_program_time = self.readLastProgramTime()
-        return (datetime.utcnow() - last_program_time) < timedelta(minutes=10)
+    @classmethod
+    def isLoopingCorrectly(cls):
+        file_folder = Path(__file__).parent
+        token = os.path.join(file_folder, 'token')
+
+        modTimesinceEpoc = os.path.getmtime(token)
+        modificationTime = datetime.utcfromtimestamp(modTimesinceEpoc)
+
+        return (datetime.utcnow() - modificationTime) < timedelta(minutes=10)
 
     def loop(self):
         if self.getLock():  # To ensure a single execution
             try:
+                # Updates "modified" time, so that we can keep track about waterflow looping
+                with open('token', 'w'):
+                    pass
+
                 self.setupGPIO(self.config['valves'])
 
                 last_program_time, old_next_program_time = self.readLastProgramTime()
