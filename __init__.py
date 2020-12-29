@@ -1,1 +1,1 @@
-from .waterflow import *
+from .waterflow import Waterflow
