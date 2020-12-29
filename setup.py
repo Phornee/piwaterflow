@@ -19,7 +19,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        'baseutils>=0.0.2'
+        'phorneebaseutils>=0.0.2'
     ],
     python_requires='>=3.6',
 )

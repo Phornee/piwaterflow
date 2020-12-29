@@ -3,7 +3,7 @@ import os
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from baseutils import ManagedClass
+from phorneebaseutils import ManagedClass
 
 class Waterflow(ManagedClass):
 
