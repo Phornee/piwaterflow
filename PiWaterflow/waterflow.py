@@ -1,6 +1,7 @@
 import RPi.GPIO as GPIO
 import os
 import time
+import yaml
 from datetime import datetime, timedelta
 from pathlib import Path
 from phorneebaseutils import ManagedClass
@@ -9,6 +10,32 @@ class Waterflow(ManagedClass):
 
     def __init__(self):
         super().__init__(classname='waterflow', execpath=__file__)
+
+    @classmethod
+    def getConfig(cls):
+        config_yml_path = os.path.join(Path(__file__).parent, 'config.yml')
+        with open(config_yml_path) as config_file:
+            config = yaml.load(config_file, Loader=yaml.FullLoader)
+            return config
+
+    @classmethod
+    def setConfig(cls, config):
+        config_yml_path = os.path.join(Path(__file__).parent, 'config.yml')
+
+        with open(config_yml_path, 'w') as config_file:
+            yaml.dump(config, config_file)
+
+    @classmethod
+    def getLog(cls):
+        log_path = os.path.join(Path(__file__).parent, 'waterflow.log')
+
+        with open(log_path, 'r') as file:
+            return file.read()
+
+
+    @classmethod
+    def getModulePath(cls):
+        return Path(__file__).parent
 
     def readConfig(self):
         super().readConfig()
@@ -33,9 +60,11 @@ class Waterflow(ManagedClass):
             pass
 
 
-    def recalcNextProgram(self, current_time, programs):
+    def recalcNextProgram(self, last_program_time, programs):
         next_program_time = None
         program_number = -1
+
+        current_time = datetime.now()
 
         # Find if next program is today
         for idx, program in enumerate(programs):
@@ -43,7 +72,7 @@ class Waterflow(ManagedClass):
                 candidate = current_time.replace(hour=program['start_time'].hour,
                                                  minute=program['start_time'].minute,
                                                  second=0)
-                if candidate > current_time:
+                if candidate > last_program_time:
                     next_program_time = candidate
                     program_number = idx
                     break
