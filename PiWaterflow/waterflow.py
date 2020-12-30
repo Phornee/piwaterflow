@@ -47,7 +47,7 @@ class Waterflow(ManagedClass):
         # Sort the programs by time
         self.config['programs'].sort(key=lambda prog: prog['start_time'])
 
-    def setupGPIO(self, valves):
+    def _setupGPIO(self, valves):
         GPIO.setmode(GPIO.BOARD)
         GPIO.setwarnings(False)
 
@@ -60,11 +60,11 @@ class Waterflow(ManagedClass):
             pass
 
 
-    def recalcNextProgram(self, last_program_time, programs):
+    def _recalcNextProgram(self, last_program_time, programs):
         next_program_time = None
         program_number = -1
 
-        current_time = datetime.now()
+        current_time = datetime.now().replace(microsecond=0)
 
         # Find if next program is today
         for idx, program in enumerate(programs):
@@ -88,7 +88,7 @@ class Waterflow(ManagedClass):
 
         return next_program_time, program_number
 
-    def executeProgram(self, program_number):
+    def _executeProgram(self, program_number):
         #inverter_enable =  not GPIO.input(self.config['external_ac_signal_pin'])
         #if inverter_enable: # If we dont have external 220V power input, then activate inverter
         GPIO.output(self.config['inverter_relay_pin'], GPIO.HIGH)
@@ -104,31 +104,31 @@ class Waterflow(ManagedClass):
         GPIO.output(self.config['inverter_relay_pin'], GPIO.LOW) #INVERTER always OFF after operations
         self.logger.info('Inverter relay OFF.')
 
-    def readLastProgramTime(self):
+    def _getLastProgramPath(self):
         file_folder = Path(__file__).parent
-        last_program_path = os.path.join(file_folder, 'lastprogram.yml')
+        return os.path.join(file_folder, 'lastprogram.yml')
+
+    def _readLastProgramTime(self):
+        last_program_path = self._getLastProgramPath()
 
         try:
             with open(last_program_path, 'r') as file:
                 data = file.readlines()
-                last_program_time = datetime.strptime(data[0][:-1], '%Y-%m-%d %H:%M:%S.%f')
-                next_program_time = datetime.strptime(data[1][:-1], '%Y-%m-%d %H:%M:%S.%f')
+                last_program_time = datetime.strptime(data[0][:-1], '%Y-%m-%d %H:%M:%S')
+                next_program_time = datetime.strptime(data[1][:-1], '%Y-%m-%d %H:%M:%S')
         except Exception as e:
             last_program_time = datetime.now()
             next_program_time = last_program_time
             with open(last_program_path, 'w') as file:
-                time_str = last_program_time.strftime('%Y-%m-%d %H:%M:%S.%f\n')
+                time_str = last_program_time.strftime('%Y-%m-%d %H:%M:%S\n')
                 file.writelines([time_str, time_str])
                 self.logger.info('First Loop execution: Initializing...' )
         return last_program_time, next_program_time
 
-
-    def writeLastProgramTime(self, timelist):
-        file_folder = Path(__file__).parent
-        last_program_path = os.path.join(file_folder, 'lastprogram.yml')
+    def _writeLastProgramTime(self, timelist):
+        last_program_path = self._getLastProgramPath()
         with open(last_program_path, 'w') as file:
             file.writelines(timelist)
-
 
     def getLock(self):
         """
@@ -140,7 +140,7 @@ class Waterflow(ManagedClass):
         else:
             modified_time = datetime.fromtimestamp(os.path.getmtime('lock'))
             if (datetime.utcnow() - modified_time) > timedelta(minutes=20):
-                self.warning.info('Lock expired: Last loop ended abnormally?.')
+                self.logger.warning.info('Lock expired: Last loop ended abnormally?.')
                 return True
         return False
 
@@ -167,29 +167,29 @@ class Waterflow(ManagedClass):
                 with open('token', 'w'):
                     pass
 
-                self.setupGPIO(self.config['valves'])
+                self._setupGPIO(self.config['valves'])
 
-                last_program_time, old_next_program_time = self.readLastProgramTime()
+                last_program_time, old_next_program_time = self._readLastProgramTime()
 
-                new_next_program_time, program_number = self.recalcNextProgram(last_program_time, self.config['programs'])
+                new_next_program_time, program_number = self._recalcNextProgram(last_program_time, self.config['programs'])
 
                 if new_next_program_time is None:
                     self.logger.info('NO active program!')
                 else:
                     if (new_next_program_time != old_next_program_time): # If "next program time" has changed, reflect in log
-                        self.logger.info('Next program: %s.' % new_next_program_time.strftime('%Y-%m-%d %H:%M:%S'))
+                        self.logger.info('Next program: %s.' % new_next_program_time.strftime('%Y-%m-%d %H:%M'))
 
                     current_time = datetime.now()
 
                     if current_time >= new_next_program_time:
                         # ------------------------------------
-                        self.executeProgram(program_number)
+                        self._executeProgram(program_number)
                         # ------------------------------------
-                        self.writeLastProgramTime([current_time.strftime('%Y-%m-%d %H:%M:%S.%f\n'),
-                                                   new_next_program_time.strftime('%Y-%m-%d %H:%M:%S.%f\n')])
+                        self._writeLastProgramTime([current_time.strftime('%Y-%m-%d %H:%M:%S\n'),
+                                                   new_next_program_time.strftime('%Y-%m-%d %H:%M:%S\n')])
                     else:
-                        self.writeLastProgramTime([last_program_time.strftime('%Y-%m-%d %H:%M:%S.%f\n'),
-                                                   new_next_program_time.strftime('%Y-%m-%d %H:%M:%S.%f\n')])
+                        self._writeLastProgramTime([last_program_time.strftime('%Y-%m-%d %H:%M:%S\n'),
+                                                   new_next_program_time.strftime('%Y-%m-%d %H:%M:%S\n')])
 
             except Exception as e:
                 self.logger.error(f"Exception looping: {e}")
