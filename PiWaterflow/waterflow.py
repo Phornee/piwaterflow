@@ -153,9 +153,9 @@ class Waterflow(ManagedClass):
     @classmethod
     def isLoopingCorrectly(cls):
         file_folder = Path(__file__).parent
-        token = os.path.join(file_folder, 'token')
+        tokenpath = os.path.join(file_folder, 'token')
 
-        modTimesinceEpoc = os.path.getmtime(token)
+        modTimesinceEpoc = os.path.getmtime(tokenpath)
         modificationTime = datetime.utcfromtimestamp(modTimesinceEpoc)
 
         return (datetime.utcnow() - modificationTime) < timedelta(minutes=10)
@@ -164,7 +164,9 @@ class Waterflow(ManagedClass):
         if self.getLock():  # To ensure a single execution
             try:
                 # Updates "modified" time, so that we can keep track about waterflow looping
-                Path('token').touch()
+                file_folder = Path(__file__).parent
+                tokenpath = os.path.join(file_folder, 'token')
+                Path(tokenpath).touch()
 
                 self._setupGPIO(self.config['valves'])
 
