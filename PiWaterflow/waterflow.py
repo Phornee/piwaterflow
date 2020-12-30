@@ -164,8 +164,7 @@ class Waterflow(ManagedClass):
         if self.getLock():  # To ensure a single execution
             try:
                 # Updates "modified" time, so that we can keep track about waterflow looping
-                with open('token', 'w'):
-                    pass
+                Path('token').touch()
 
                 self._setupGPIO(self.config['valves'])
 
