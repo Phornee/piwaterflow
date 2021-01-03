@@ -160,9 +160,22 @@ class Waterflow(ManagedClass):
 
         return (datetime.utcnow() - modificationTime) < timedelta(minutes=10)
 
+    @classmethod
+    def forceProgram(cls, program_number):
+        config = cls.getConfig()
+        if program_number >= 0 and program_number < len(config['programs']):
+            file_folder = Path(__file__).parent
+            force_file_path = os.path.join(file_folder, 'force')
+            with open(force_file_path, 'w') as force_file:
+                force_file.write("{}".format(program_number))
+                return True
+        else:
+            return False
+
     def loop(self):
         if self.getLock():  # To ensure a single execution
             try:
+                forced = False
                 # Updates "modified" time, so that we can keep track about waterflow looping
                 file_folder = Path(__file__).parent
                 tokenpath = os.path.join(file_folder, 'token')
@@ -174,10 +187,20 @@ class Waterflow(ManagedClass):
 
                 new_next_program_time, program_number = self._recalcNextProgram(last_program_time, self.config['programs'])
 
+                force_file_path = os.path.join(file_folder, 'force')
+                if os.path.exists(force_file_path):
+                    with open(force_file_path, 'r') as force_file:
+                        program_number = int(force_file.readline())
+                        new_next_program_time = datetime.now()
+                        forced = True
+                    os.remove(force_file_path)
+
                 if new_next_program_time is None:
                     self.logger.info('NO active program!')
                 else:
-                    if (new_next_program_time != old_next_program_time): # If "next program time" has changed, reflect in log
+                    if forced:
+                        self.logger.info('Forced program {} executing now.'.format(program_number))
+                    elif (new_next_program_time != old_next_program_time): # If "next program time" has changed, reflect in log
                         self.logger.info('Next program: %s.' % new_next_program_time.strftime('%Y-%m-%d %H:%M'))
 
                     current_time = datetime.now()
