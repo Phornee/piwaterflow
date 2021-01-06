@@ -1,4 +1,4 @@
-logpath: waterflow.log
+logpath: log/waterflow.log
 loop_freq: 1
 inverter_relay_pin: 31
 external_ac_signal_pin: 10

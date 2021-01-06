@@ -27,7 +27,7 @@ class Waterflow(ManagedClass):
 
     @classmethod
     def getLog(cls):
-        log_path = os.path.join(Path(__file__).parent, 'waterflow.log')
+        log_path = os.path.join(Path(__file__).parent, 'log/waterflow.log')
 
         with open(log_path, 'r') as file:
             return file.read()
