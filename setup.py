@@ -19,7 +19,9 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        'phorneebaseutils>=0.0.2'
+        'phorneebaseutils>=0.0.2',
+        'RPi.GPIO>=0.7.0',
+        'PyYAML>=5.3.1'
     ],
     python_requires='>=3.6',
 )
