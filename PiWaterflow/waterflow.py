@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from phorneebaseutils import ManagedClass
 
+min_date = datetime(1971, 11, 24, 0, 0, 0)
+
 class Waterflow(ManagedClass):
 
     def __init__(self):
@@ -196,7 +198,10 @@ class Waterflow(ManagedClass):
                     os.remove(force_file_path)
 
                 if new_next_program_time is None:
-                    self.logger.info('NO active program!')
+                    if old_next_program_time != min_date:
+                        self._writeLastProgramTime([last_program_time.strftime('%Y-%m-%d %H:%M:%S\n'),
+                                                    min_date.strftime('%Y-%m-%d %H:%M:%S\n')])
+                        self.logger.info('NO active program!')
                 else:
                     if forced:
                         self.logger.info('Forced program {} executing now.'.format(program_number))
