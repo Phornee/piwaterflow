@@ -8,18 +8,22 @@ setuptools.setup(
     version="0.0.2",
     author="Ismael Raya",
     author_email="phornee@gmail.com",
-    description="Waterflow resilient system",
+    description="Raspberry Pi Waterflow resilient system",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/Phornee/PiWaterflow",
     packages=setuptools.find_packages(),
+    package_data={
+        '': ['*.yml'],
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
+        "Topic :: Home Automation"
     ],
     install_requires=[
-        'phorneebaseutils>=0.0.2',
+        'baseutils_phornee>=0.0.2',
         'RPi.GPIO>=0.7.0',
         'PyYAML>=5.3.1'
     ],
