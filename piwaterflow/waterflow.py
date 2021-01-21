@@ -136,19 +136,25 @@ class Waterflow(ManagedClass):
         """
         Use file as a lock... not using DB locks because we want to maximize resiliency
         """
-        if not os.path.exists('lock'):
-            with open('lock', 'w'):
+        file_folder = Path(__file__).parent
+        lock_path = os.path.join(file_folder, 'lock')
+
+        if not os.path.exists(lock_path):
+            with open(lock_path, 'w'):
                 return True
         else:
-            modified_time = datetime.fromtimestamp(os.path.getmtime('lock'))
+            modified_time = datetime.fromtimestamp(os.path.getmtime(lock_path))
             if (datetime.utcnow() - modified_time) > timedelta(minutes=20):
                 self.logger.warning.info('Lock expired: Last loop ended abnormally?.')
                 return True
         return False
 
     def releaseLock(self):
-        if os.path.exists('lock'):
-            os.remove('lock')
+        file_folder = Path(__file__).parent
+        lock_path = os.path.join(file_folder, 'lock')
+
+        if os.path.exists(lock_path):
+            os.remove(lock_path)
         else:
             self.logger.error(f"Could not release lock.")
 
