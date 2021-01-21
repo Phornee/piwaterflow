@@ -1,0 +1,5 @@
+/piwaterflow/token
+/piwaterflow/lock
+/piwaterflow/config.yml
+/piwaterflow/lastprogram.yml
+/piwaterflow/log/*.log

@@ -4,14 +4,14 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="PiWaterflow",
-    version="0.0.2",
+    name="piwaterflow",
+    version="0.0.3",
     author="Ismael Raya",
     author_email="phornee@gmail.com",
     description="Raspberry Pi Waterflow resilient system",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/Phornee/PiWaterflow",
+    url="https://github.com/Phornee/piwaterflow",
     packages=setuptools.find_packages(),
     package_data={
         '': ['*.yml'],

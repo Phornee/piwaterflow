@@ -1,1 +1,1 @@
-from .PiWaterflow.waterflow import Waterflow
+from .piwaterflow.waterflow import Waterflow
