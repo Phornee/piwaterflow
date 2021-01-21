@@ -3,3 +3,6 @@
 /piwaterflow/config.yml
 /piwaterflow/lastprogram.yml
 /piwaterflow/log/*.log
+/build
+/dist
+/piwaterflow.egg-info
