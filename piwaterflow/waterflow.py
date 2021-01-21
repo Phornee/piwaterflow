@@ -4,7 +4,7 @@ import time
 import yaml
 from datetime import datetime, timedelta
 from pathlib import Path
-from phorneebaseutils import ManagedClass
+from baseutils_phornee import ManagedClass
 
 min_date = datetime(1971, 11, 24, 0, 0, 0)
 
