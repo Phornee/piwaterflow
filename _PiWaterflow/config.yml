@@ -1,0 +1,20 @@
+external_ac_signal_pin: 10
+inverter_relay_pin: 31
+logpath: log
+loop_freq: 1
+programs:
+- enabled: false
+  start_time: '11:25:00'
+  valves_times:
+  - 1
+  - 1
+- enabled: false
+  start_time: '16:00:00'
+  valves_times:
+  - 1
+  - 1
+valves:
+- name: main
+  pin: 33
+- name: grass
+  pin: 35

@@ -1,0 +1,10 @@
+2021-01-08 20:06:27-Next program: 2021-01-08 11:25.
+2021-01-08 20:06:27-Inverter relay ON.
+2021-01-08 20:06:27-Valve 0 ON.
+2021-01-08 20:07:27-Valve 0 OFF.
+2021-01-08 20:07:27-Valve 1 ON.
+2021-01-08 20:08:27-Valve 1 OFF.
+2021-01-08 20:08:27-Inverter relay OFF.
+2021-01-15 14:01:57-First Loop execution: Initializing...
+2021-01-15 14:26:50-Exception looping: 'method_descriptor' object has no attribute 'min'
+2021-01-15 14:34:34-First Loop execution: Initializing...
