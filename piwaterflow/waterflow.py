@@ -14,30 +14,30 @@ class Waterflow(ManagedClass):
         super().__init__(classname='waterflow', execpath=__file__)
 
     @classmethod
+    def getHomevarPath(cls):
+        return "{}/var/waterflow".format(str(Path.home()))
+
+    @classmethod
     def getConfig(cls):
-        config_yml_path = os.path.join(Path(__file__).parent, 'config.yml')
+        config_yml_path = os.path.join(cls.getHomevarPath(), 'config.yml')
         with open(config_yml_path) as config_file:
             config = yaml.load(config_file, Loader=yaml.FullLoader)
             return config
 
     @classmethod
     def setConfig(cls, config):
-        config_yml_path = os.path.join(Path(__file__).parent, 'config.yml')
+        config_yml_path = os.path.join(cls.getHomevarPath(), 'config.yml')
 
         with open(config_yml_path, 'w') as config_file:
             yaml.dump(config, config_file)
 
     @classmethod
     def getLog(cls):
-        log_path = os.path.join(Path(__file__).parent, 'log/waterflow.log')
+        log_path = os.path.join(cls.getHomevarPath(), 'log/waterflow.log')
 
         with open(log_path, 'r') as file:
             return file.read()
 
-
-    @classmethod
-    def getModulePath(cls):
-        return Path(__file__).parent
 
     def readConfig(self):
         super().readConfig()
@@ -157,8 +157,7 @@ class Waterflow(ManagedClass):
 
     @classmethod
     def isLoopingCorrectly(cls):
-        homevar = "{}/var/waterflow".format(str(Path.home()))
-        tokenpath = os.path.join(homevar, 'token')
+        tokenpath = os.path.join(cls.getHomevarPath(), 'token')
 
         modTimesinceEpoc = os.path.getmtime(tokenpath)
         modificationTime = datetime.utcfromtimestamp(modTimesinceEpoc)
@@ -169,8 +168,7 @@ class Waterflow(ManagedClass):
     def forceProgram(cls, program_number):
         config = cls.getConfig()
         if program_number >= 0 and program_number < len(config['programs']):
-            homevar = "{}/var/waterflow".format(str(Path.home()))
-            force_file_path = os.path.join(homevar, 'force')
+            force_file_path = os.path.join(cls.getHomevarPath(), 'force')
             with open(force_file_path, 'w') as force_file:
                 force_file.write("{}".format(program_number))
                 return True
