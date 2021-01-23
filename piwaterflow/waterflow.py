@@ -107,8 +107,7 @@ class Waterflow(ManagedClass):
         self.logger.info('Inverter relay OFF.')
 
     def _getLastProgramPath(self):
-        file_folder = Path(__file__).parent
-        return os.path.join(file_folder, 'lastprogram.yml')
+        return os.path.join(self.homevar, 'lastprogram.yml')
 
     def _readLastProgramTime(self):
         last_program_path = self._getLastProgramPath()
@@ -136,8 +135,7 @@ class Waterflow(ManagedClass):
         """
         Use file as a lock... not using DB locks because we want to maximize resiliency
         """
-        file_folder = Path(__file__).parent
-        lock_path = os.path.join(file_folder, 'lock')
+        lock_path = os.path.join(self.homevar, 'lock')
 
         if not os.path.exists(lock_path):
             with open(lock_path, 'w'):
@@ -150,8 +148,7 @@ class Waterflow(ManagedClass):
         return False
 
     def releaseLock(self):
-        file_folder = Path(__file__).parent
-        lock_path = os.path.join(file_folder, 'lock')
+        lock_path = os.path.join(self.homevar, 'lock')
 
         if os.path.exists(lock_path):
             os.remove(lock_path)
@@ -160,8 +157,8 @@ class Waterflow(ManagedClass):
 
     @classmethod
     def isLoopingCorrectly(cls):
-        file_folder = Path(__file__).parent
-        tokenpath = os.path.join(file_folder, 'token')
+        homevar = "{}/var/waterflow".format(str(Path.home()))
+        tokenpath = os.path.join(homevar, 'token')
 
         modTimesinceEpoc = os.path.getmtime(tokenpath)
         modificationTime = datetime.utcfromtimestamp(modTimesinceEpoc)
@@ -172,8 +169,8 @@ class Waterflow(ManagedClass):
     def forceProgram(cls, program_number):
         config = cls.getConfig()
         if program_number >= 0 and program_number < len(config['programs']):
-            file_folder = Path(__file__).parent
-            force_file_path = os.path.join(file_folder, 'force')
+            homevar = "{}/var/waterflow".format(str(Path.home()))
+            force_file_path = os.path.join(homevar, 'force')
             with open(force_file_path, 'w') as force_file:
                 force_file.write("{}".format(program_number))
                 return True
@@ -185,8 +182,7 @@ class Waterflow(ManagedClass):
             try:
                 forced = False
                 # Updates "modified" time, so that we can keep track about waterflow looping
-                file_folder = Path(__file__).parent
-                tokenpath = os.path.join(file_folder, 'token')
+                tokenpath = os.path.join(self.homevar, 'token')
                 Path(tokenpath).touch()
 
                 self._setupGPIO(self.config['valves'])
@@ -195,7 +191,7 @@ class Waterflow(ManagedClass):
 
                 new_next_program_time, program_number = self._recalcNextProgram(last_program_time, self.config['programs'])
 
-                force_file_path = os.path.join(file_folder, 'force')
+                force_file_path = os.path.join(self.homevar, 'force')
                 if os.path.exists(force_file_path):
                     with open(force_file_path, 'r') as force_file:
                         program_number = int(force_file.readline())

@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="piwaterflow",
-    version="0.0.5",
+    version="0.0.6",
     author="Ismael Raya",
     author_email="phornee@gmail.com",
     description="Raspberry Pi Waterflow resilient system",
@@ -23,7 +23,7 @@ setuptools.setup(
         "Topic :: Home Automation"
     ],
     install_requires=[
-        'baseutils_phornee>=0.0.2',
+        'baseutils_phornee>=0.0.4',
         'RPi.GPIO>=0.7.0',
         'PyYAML>=5.3.1'
     ],
