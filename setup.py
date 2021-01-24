@@ -23,9 +23,9 @@ setuptools.setup(
         "Topic :: Home Automation"
     ],
     install_requires=[
-        'baseutils_phornee>=0.0.4',
+        'baseutils_phornee>=0.0.5',
         'RPi.GPIO>=0.7.0',
-        'PyYAML>=5.3.1'
+        'Flask>=1.1.2'
     ],
     python_requires='>=3.6',
 )

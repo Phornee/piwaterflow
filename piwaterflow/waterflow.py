@@ -1,7 +1,6 @@
 import RPi.GPIO as GPIO
 import os
 import time
-import yaml
 from datetime import datetime, timedelta
 from pathlib import Path
 from baseutils_phornee import ManagedClass
@@ -11,25 +10,11 @@ min_date = datetime(1971, 11, 24, 0, 0, 0)
 class Waterflow(ManagedClass):
 
     def __init__(self):
-        super().__init__(classname='waterflow', execpath=__file__)
+        super().__init__(execpath=__file__)
 
     @classmethod
-    def getHomevarPath(cls):
-        return "{}/var/waterflow".format(str(Path.home()))
-
-    @classmethod
-    def getConfig(cls):
-        config_yml_path = os.path.join(cls.getHomevarPath(), 'config.yml')
-        with open(config_yml_path) as config_file:
-            config = yaml.load(config_file, Loader=yaml.FullLoader)
-            return config
-
-    @classmethod
-    def setConfig(cls, config):
-        config_yml_path = os.path.join(cls.getHomevarPath(), 'config.yml')
-
-        with open(config_yml_path, 'w') as config_file:
-            yaml.dump(config, config_file)
+    def getClassName(cls):
+        return "waterflow"
 
     @classmethod
     def getLog(cls):
