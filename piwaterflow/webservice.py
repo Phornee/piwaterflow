@@ -1,5 +1,5 @@
 from flask import Flask, request, make_response, render_template, redirect, url_for
-import datetime
+from datetime import datetime
 from .waterflow import Waterflow
 
 class PiWWWaterflowService:
@@ -51,9 +51,9 @@ class PiWWWaterflowService:
         parsed_config = Waterflow.getConfig()
 
         if request.method == 'POST':  # this block is only entered when the form is submitted
-            parsed_config['programs'][0]['start_time'] = datetime.datetime.strptime(parsed_config['programs'][0]['start_time'],
+            parsed_config['programs'][0]['start_time'] = datetime.strptime(parsed_config['programs'][0]['start_time'],
                                                                              '%H:%M:%S')
-            time1 = datetime.datetime.strptime(request.form.get('time1'), '%H:%M')
+            time1 = datetime.strptime(request.form.get('time1'), '%H:%M')
             new_datetime = parsed_config['programs'][0]['start_time'].replace(hour=time1.hour, minute=time1.minute)
             parsed_config['programs'][0]['start_time'] = new_datetime.strftime('%H:%M:%S')
             parsed_config['programs'][0]['valves_times'][0] = int(request.form.get('valve11'))
@@ -61,9 +61,9 @@ class PiWWWaterflowService:
             enabled1_checkbox_value = request.form.get('prog1enabled')
             parsed_config['programs'][0]['enabled'] = enabled1_checkbox_value is not None
 
-            parsed_config['programs'][1]['start_time'] = datetime.datetime.strptime(parsed_config['programs'][1]['start_time'],
+            parsed_config['programs'][1]['start_time'] = datetime.strptime(parsed_config['programs'][1]['start_time'],
                                                                              '%H:%M:%S')
-            time2 = datetime.datetime.strptime(request.form.get('time2'), '%H:%M')
+            time2 = datetime.strptime(request.form.get('time2'), '%H:%M')
             new_datetime = parsed_config['programs'][1]['start_time'].replace(hour=time2.hour, minute=time2.minute)
             parsed_config['programs'][1]['start_time'] = new_datetime.strftime('%H:%M:%S')
             parsed_config['programs'][1]['valves_times'][0] = int(request.form.get('valve21'))
@@ -76,7 +76,7 @@ class PiWWWaterflowService:
             return redirect(url_for('waterflow'))  # Redirect so that we dont RE-POST same data again when refreshing
 
         for program in parsed_config['programs']:
-            program['start_time'] = datetime.datetime.strptime(program['start_time'], '%H:%M:%S')
+            program['start_time'] = datetime.strptime(program['start_time'], '%H:%M:%S')
 
         # Sort the programs by time
         parsed_config['programs'].sort(key=lambda prog: prog['start_time'])
