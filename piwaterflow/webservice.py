@@ -13,6 +13,9 @@ class PiWWWaterflowService:
         self.app.add_url_rule('/config', 'config', self.config, methods=['GET'])
         self.app.add_url_rule('/waterflow', 'waterflow', self.waterflow, methods=['GET', 'POST'])
 
+    def getApp(self):
+        return self.app
+
     def run(self):
         self.app.run()
 
