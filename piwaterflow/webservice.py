@@ -4,8 +4,8 @@ from .waterflow import Waterflow
 
 class PiWWWaterflowService:
 
-    def __init__(self,  template_folder):
-        self.app = Flask(__name__,  template_folder=template_folder)
+    def __init__(self,  template_folder, static_folder):
+        self.app = Flask(__name__,  template_folder=template_folder, static_folder=static_folder)
         self.app.add_url_rule('/', 'index', self.index, methods=['GET'])
         self.app.add_url_rule('/service', 'service', self.service, methods=['GET', 'POST'])
         self.app.add_url_rule('/log', 'log', self.log, methods=['GET'])
