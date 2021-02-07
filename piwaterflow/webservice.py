@@ -9,7 +9,7 @@ class PiWWWaterflowService:
         self.app.add_url_rule('/', 'index', self.index, methods=['GET'])
         self.app.add_url_rule('/service', 'service', self.service, methods=['GET', 'POST'])
         self.app.add_url_rule('/log', 'log', self.log, methods=['GET'])
-        self.app.add_url_rule('/force_program', 'force_program', self.force_program, methods=['POST'])
+        self.app.add_url_rule('/force_program', 'force_program', self.force_program, methods=['GET','POST'])
         self.app.add_url_rule('/config', 'config', self.config, methods=['GET'])
         self.app.add_url_rule('/waterflow', 'waterflow', self.waterflow, methods=['GET', 'POST'])
 
@@ -38,9 +38,12 @@ class PiWWWaterflowService:
         return response
 
     def force_program(self):
-        Waterflow.forceProgram(int(request.data))
+        if request.method == 'POST':
+            Waterflow.forceProgram(int(request.data))
 
-        return redirect(url_for('waterflow'))
+            return redirect(url_for('waterflow'))
+        elif request.method == 'GET':
+            return "true" if Waterflow.forcedProgram() else "false"
 
     def config(self):
         if request.method == 'GET':
