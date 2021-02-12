@@ -23,7 +23,6 @@ class Waterflow(ManagedClass):
         with open(log_path, 'r') as file:
             return file.read()
 
-
     def readConfig(self):
         super().readConfig()
 
@@ -99,28 +98,6 @@ class Waterflow(ManagedClass):
 
     def _writeLastProgramTime(self, timelist):
         last_program_path = self._getLastProgramPath()
-        with open(last_program_path, 'w') as file:
-            file.writelines(timelist)
-
-    def _getNextProgramPath(self):
-        return os.path.join(self.homevar, 'nextprogram.yml')
-
-    def _readNextProgramTime(self):
-        next_program_path = self._getNextProgramPath()
-
-        try:
-            with open(next_program_path, 'r') as file:
-                data = file.readlines()
-                next_program_time = datetime.strptime(data[0][:-1], '%Y-%m-%d %H:%M:%S')
-        except Exception as e:
-            next_program_time = datetime.now()
-            with open(next_program_path, 'w') as file:
-                time_str = self._timeToStr(next_program_time)
-                file.writelines([time_str, ])
-        return next_program_time
-
-    def _writeNextProgramTime(self, timelist):
-        last_program_path = self._getNextProgramPath()
         with open(last_program_path, 'w') as file:
             file.writelines(timelist)
 
@@ -211,20 +188,20 @@ class Waterflow(ManagedClass):
         self.logger.info('Inverter relay OFF.')
 
     def _logNextProgramTime(self, current_time):
+
+        log = self.getLog()
+
+        lines = log.split('\n')
+        last_line = lines[-2]
+
         new_next_program_time, _ = self._recalcNextProgram(current_time)
-        old_next_program_time = self._readNextProgramTime()
-
-        # if no old next program, initialize
-        if old_next_program_time is None:  # If old next program doesn´t exist, fill it keeping the last program field
-            if old_next_program_time != min_date:
-                self._writeNextProgramTime(self._timeToStr(min_date))
-
         if new_next_program_time is not None:
-            if  new_next_program_time != old_next_program_time:  # If "next program time" has changed, reflect in log
-                self._writeNextProgramTime(self._timeToStr(new_next_program_time))
-                self.logger.info('Next program: %s.' % new_next_program_time.strftime('%Y-%m-%d %H:%M'))
+            string_to_log = 'Next program: %s.' % new_next_program_time.strftime('%Y-%m-%d %H:%M')
         else:
-            self.logger.info('NO active program!') 
+            string_to_log = 'NO active program!'
+
+        if last_line[20:] != string_to_log and string_to_log != '':
+            self.logger.info(string_to_log)
 
     def loop(self):
         if self.getLock():  # To ensure a single execution
@@ -253,16 +230,14 @@ class Waterflow(ManagedClass):
                             self._executeValve(valve)
                     # Remove force token file
                     os.remove(force_file_path)
-                    self._logNextProgramTime(current_time)
                 else:
                     if new_next_program_time is not None and current_time >= new_next_program_time:
                         # ------------------------
                         self._executeProgram(calculated_program_number)
                         self._writeLastProgramTime(self._timeToStr(current_time))
-                        self._logNextProgramTime(current_time)
 
                 # Recalc next program time
-                #self._logNextProgramTime(current_time)
+                self._logNextProgramTime(current_time)
 
             except Exception as e:
                 self.logger.error(f"Exception looping: {e}")
