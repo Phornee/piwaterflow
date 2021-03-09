@@ -1,6 +1,7 @@
 from flask import Flask, request, make_response, render_template, redirect, url_for
 from datetime import datetime
 from .waterflow import Waterflow
+import json
 
 class PiWWWaterflowService:
 
@@ -9,7 +10,8 @@ class PiWWWaterflowService:
         self.app.add_url_rule('/', 'index', self.index, methods=['GET'])
         self.app.add_url_rule('/service', 'service', self.service, methods=['GET', 'POST'])
         self.app.add_url_rule('/log', 'log', self.log, methods=['GET'])
-        self.app.add_url_rule('/force_program', 'force_program', self.force_program, methods=['GET','POST'])
+        self.app.add_url_rule('/force', 'force', self.force, methods=['GET','POST'])
+        self.app.add_url_rule('/stop', 'stop', self.stop, methods=['GET', 'POST'])
         self.app.add_url_rule('/config', 'config', self.config, methods=['GET'])
         self.app.add_url_rule('/waterflow', 'waterflow', self.waterflow, methods=['GET', 'POST'])
 
@@ -24,8 +26,8 @@ class PiWWWaterflowService:
         return 'This is the Pi server.'
 
     def service(self):
-        process_running = Waterflow.isLoopingCorrectly()
         if request.method == 'GET':
+             process_running = Waterflow.isLoopingCorrectly()
              return "true" if process_running else "false"
 
     # log
@@ -37,13 +39,23 @@ class PiWWWaterflowService:
         response.boy = log_string
         return response
 
-    def force_program(self):
+    def force(self):
         if request.method == 'POST':
-            Waterflow.forceProgram(int(request.data))
-
+            type_force = request.form.get('type')
+            value_force = request.form.get('value')
+            Waterflow.force(type_force, int(value_force))
             return redirect(url_for('waterflow'))
         elif request.method == 'GET':
-            return "true" if Waterflow.forcedProgram() else "false"
+            forced_data = Waterflow.getForcedInfo()
+            return json.dumps(forced_data)
+
+    def stop(self):
+        if request.method == 'GET':
+            stop_requested = Waterflow.stopRequested()
+            return "true" if stop_requested else "false"
+        else:
+            stop_requested = Waterflow.stop()
+            return "true" if stop_requested else "false"
 
     def config(self):
         if request.method == 'GET':

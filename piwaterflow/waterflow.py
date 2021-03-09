@@ -4,6 +4,7 @@ import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from baseutils_phornee import ManagedClass
+import json
 
 min_date = datetime(1971, 11, 24, 0, 0, 0)
 
@@ -135,20 +136,48 @@ class Waterflow(ManagedClass):
         return (datetime.utcnow() - modificationTime) < timedelta(minutes=10)
 
     @classmethod
-    def forceProgram(cls, program_number):
+    def force(cls, type_force, value):
         config = cls.getConfig()
-        if program_number >= 0 and program_number < len(config['programs']):
+        if (type_force == 'program' and 0 <= value < len(config['programs'])) or \
+           (type_force == 'valve' and 0 <= value < len(config['valves'])):
             force_file_path = os.path.join(cls.getHomevarPath(), 'force')
             with open(force_file_path, 'w') as force_file:
-                force_file.write("{}".format(program_number))
+                force_file.write('{{"type":"{0}","value":{1}}}'.format(type_force, value))
                 return True
         else:
             return False
 
     @classmethod
-    def forcedProgram(cls):
+    def stop(cls):
+        stop_req_path = os.path.join(cls.getHomevarPath(), 'stop')
+        Path(stop_req_path).touch()
+        return True
+
+    @classmethod
+    def stopRequested(cls):
+        stop_req_path = os.path.join(cls.getHomevarPath(), 'stop')
+        return os.path.exists(stop_req_path)
+
+    @classmethod
+    def stopRemove(cls):
+        stop_req_path = os.path.join(cls.getHomevarPath(), 'stop')
+        return os.remove(stop_req_path)
+
+    @classmethod
+    def getForcedInfo(cls):
         force_file_path = os.path.join(cls.getHomevarPath(), 'force')
-        return os.path.exists(force_file_path)
+        if os.path.exists(force_file_path):
+            with open(force_file_path, 'r') as force_file:
+                data = json.load(force_file)
+                return data
+        else:
+            return None
+
+    def _sleep(self, time_sleep):
+        time_count = 0
+        while not self.stopRequested() and time_count < time_sleep:
+            time_count = time_count + 5
+            time.sleep(5)  # Every X seconds
 
     def _executeValve(self, valve):
         # ------------------------------------
@@ -159,9 +188,9 @@ class Waterflow(ManagedClass):
         valve_pin = self.config['valves'][valve]['pin']
         GPIO.output(valve_pin, GPIO.HIGH)
         self.logger.info('Valve %s ON.' % valve)
-        while True:
-            time.sleep(5)  # Every X seconds
-            pass
+
+        self._sleep(5*60)
+
         GPIO.output(valve_pin, GPIO.LOW)
         self.logger.info('Valve %s OFF.' % valve)
         # if inverter_enable: # If we dont have external 220V power input, then activate inverter
@@ -172,17 +201,23 @@ class Waterflow(ManagedClass):
         """
         Works for regular programs, or forced ones (if program number is sent)
         """
+        self.logger.info('Executing program %s.' % program_number)
         # inverter_enable =  not GPIO.input(self.config['external_ac_signal_pin'])
         # if inverter_enable: # If we don't have external 220V power input, then activate inverter
         GPIO.output(self.config['inverter_relay_pin'], GPIO.HIGH)
         self.logger.info('Inverter relay ON.')
         for idx, valve_time in enumerate(self.config['programs'][program_number]['valves_times']):
-            valve_pin = self.config['valves'][idx]['pin']
-            GPIO.output(valve_pin, GPIO.HIGH)
-            self.logger.info('Valve %s ON.' % idx)
-            time.sleep(valve_time * 60)
-            GPIO.output(valve_pin, GPIO.LOW)
-            self.logger.info('Valve %s OFF.' % idx)
+            if valve_time > 0 and not self.stopRequested():
+                valve_pin = self.config['valves'][idx]['pin']
+                GPIO.output(valve_pin, GPIO.HIGH)
+                self.logger.info('Valve %s ON.' % idx)
+
+                self._sleep(valve_time * 60)
+
+                GPIO.output(valve_pin, GPIO.LOW)
+                self.logger.info('Valve %s OFF.' % idx)
+            else:
+                self.logger.info('Valve %s Skipped.' % idx)
         # if inverter_enable: # If we dont have external 220V power input, then activate inverter
         GPIO.output(self.config['inverter_relay_pin'], GPIO.LOW)  # INVERTER always OFF after operations
         self.logger.info('Inverter relay OFF.')
@@ -210,35 +245,41 @@ class Waterflow(ManagedClass):
                 token_path = os.path.join(self.homevar, 'token')
                 Path(token_path).touch()
 
-                self._setupGPIO(self.config['valves'])
-                last_program_time = self._readLastProgramTime()
-
-                new_next_program_time, calculated_program_number = self._recalcNextProgram(last_program_time)
                 current_time = datetime.now()
-                force_file_path = os.path.join(self.homevar, 'force')
-                if os.path.exists(force_file_path):
-                    with open(force_file_path, 'r') as force_file:
-                        program_number = int(force_file.readline())
-                        if program_number >= 0:
-                            self.logger.info('Forced program {} executing now.'.format(program_number))
+                forced_info = self.getForcedInfo()
+
+                if not self.stopRequested():
+                    self._setupGPIO(self.config['valves'])
+                    last_program_time = self._readLastProgramTime()
+
+                    if forced_info is not None:
+                        forced_type = forced_info.get("type")
+                        forced_value = forced_info.get("value")
+                        if forced_type == "program":
+                            self.logger.info('Forced program {} executing now.'.format(forced_value))
                             # ------------------------
-                            self._executeProgram(program_number)
+                            self._executeProgram(forced_value)
                             self._writeLastProgramTime(self._timeToStr(current_time))
-                        else:
-                            valve = - program_number - 1
+                        elif forced_type == "valve":
                             # ------------------------
-                            self._executeValve(valve)
+                            self._executeValve(forced_value)
+                    else:
+                        new_next_program_time, calculated_program_number = self._recalcNextProgram(last_program_time)
+                        if new_next_program_time is not None and current_time >= new_next_program_time:
+                            # ------------------------
+                            self._executeProgram(calculated_program_number)
+                            self._writeLastProgramTime(self._timeToStr(current_time))
+
+                if forced_info is not None:
                     # Remove force token file
-                    os.remove(force_file_path)
-                else:
-                    if new_next_program_time is not None and current_time >= new_next_program_time:
-                        # ------------------------
-                        self._executeProgram(calculated_program_number)
-                        self._writeLastProgramTime(self._timeToStr(current_time))
+                    os.remove(os.path.join(self.getHomevarPath(), 'force'))
+
+                if self.stopRequested():
+                    self.logger.info('Activity stopped.')
+                    self.stopRemove()
 
                 # Recalc next program time
                 self._logNextProgramTime(current_time)
-
             except Exception as e:
                 self.logger.error(f"Exception looping: {e}")
             finally:
