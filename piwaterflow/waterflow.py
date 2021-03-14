@@ -4,6 +4,8 @@ import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from baseutils_phornee import ManagedClass
+from influxdb_client import InfluxDBClient, Point, WritePrecision
+from influxdb_client.client.write_api import SYNCHRONOUS
 import json
 
 min_date = datetime(1971, 11, 24, 0, 0, 0)
@@ -12,6 +14,12 @@ class Waterflow(ManagedClass):
 
     def __init__(self):
         super().__init__(execpath=__file__)
+
+        token = self.config['influxdbconn']['token']
+        self.org = self.config['influxdbconn']['org']
+        self.bucket = self.config['influxdbconn']['bucket']
+
+        self.conn = InfluxDBClient(url=self.config['influxdbconn']['url'], token=token)
 
     @classmethod
     def getClassName(cls):
@@ -179,6 +187,17 @@ class Waterflow(ManagedClass):
             time_count = time_count + 5
             time.sleep(5)  # Every X seconds
 
+    def _emitMetric(self, action, forced):
+        write_api = self.conn.write_api(write_options=SYNCHRONOUS)
+
+        point = Point('piwaterflow') \
+            .tag('action', action) \
+            .tag('forced', forced) \
+            .field('fake', 0) \
+            .time(datetime.utcnow(), WritePrecision.NS)
+
+        write_api.write(self.bucket, self.org, point)
+
     def _executeValve(self, valve):
         # ------------------------------------
         # inverter_enable =  not GPIO.input(self.config['external_ac_signal_pin'])
@@ -258,15 +277,18 @@ class Waterflow(ManagedClass):
                         if forced_type == "program":
                             self.logger.info('Forced program {} executing now.'.format(forced_value))
                             # ------------------------
+                            self._emitMetric('prog{}'.format(forced_value), True)
                             self._executeProgram(forced_value)
                             self._writeLastProgramTime(self._timeToStr(current_time))
                         elif forced_type == "valve":
                             # ------------------------
+                            self._emitMetric('valve{}'.format(forced_value), True)
                             self._executeValve(forced_value)
                     else:
                         new_next_program_time, calculated_program_number = self._recalcNextProgram(last_program_time)
                         if new_next_program_time is not None and current_time >= new_next_program_time:
                             # ------------------------
+                            self._emitMetric('prog{}'.format(calculated_program_number), False)
                             self._executeProgram(calculated_program_number)
                             self._writeLastProgramTime(self._timeToStr(current_time))
 
@@ -276,6 +298,7 @@ class Waterflow(ManagedClass):
 
                 if self.stopRequested():
                     self.logger.info('Activity stopped.')
+                    self._emitMetric('Stop', True)
                     self.stopRemove()
 
                 # Recalc next program time
