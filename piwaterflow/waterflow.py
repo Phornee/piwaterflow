@@ -8,8 +8,6 @@ from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
 import json
 
-min_date = datetime(1971, 11, 24, 0, 0, 0)
-
 class Waterflow(ManagedClass):
 
     def __init__(self):
@@ -208,7 +206,7 @@ class Waterflow(ManagedClass):
         GPIO.output(valve_pin, GPIO.HIGH)
         self.logger.info('Valve %s ON.' % valve)
 
-        self._sleep(5*60)
+        self._sleep(self.config['max_valve_time']*60)
 
         GPIO.output(valve_pin, GPIO.LOW)
         self.logger.info('Valve %s OFF.' % valve)

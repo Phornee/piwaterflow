@@ -18,6 +18,7 @@ valves:
   pin: 33
 - name: grass
   pin: 35
+max_valve_time: 10
 influxdbconn:
   token: ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   org: +++++++++++++
