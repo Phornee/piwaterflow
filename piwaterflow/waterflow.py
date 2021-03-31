@@ -23,9 +23,8 @@ class Waterflow(ManagedClass):
     def getClassName(cls):
         return "waterflow"
 
-    @classmethod
-    def getLog(cls):
-        log_path = os.path.join(cls.getHomevarPath(), 'log/waterflow.log')
+    def getLog(self):
+        log_path = os.path.join(self.getHomevarPath(), 'log/waterflow.log')
 
         with open(log_path, 'r') as file:
             return file.read()
@@ -132,18 +131,16 @@ class Waterflow(ManagedClass):
         else:
             self.logger.error(f"Could not release lock.")
 
-    @classmethod
-    def isLoopingCorrectly(cls):
-        tokenpath = os.path.join(cls.getHomevarPath(), 'token')
+    def isLoopingCorrectly(self):
+        tokenpath = os.path.join(self.getHomevarPath(), 'token')
 
         modTimesinceEpoc = os.path.getmtime(tokenpath)
         modificationTime = datetime.utcfromtimestamp(modTimesinceEpoc)
 
         return (datetime.utcnow() - modificationTime) < timedelta(minutes=10)
 
-    @classmethod
-    def force(cls, type_force, value):
-        config = cls.getConfig()
+    def force(self, type_force, value):
+        config = self.getConfig()
         if (type_force == 'program' and 0 <= value < len(config['programs'])) or \
            (type_force == 'valve' and 0 <= value < len(config['valves'])):
             force_file_path = os.path.join(cls.getHomevarPath(), 'force')
@@ -153,25 +150,21 @@ class Waterflow(ManagedClass):
         else:
             return False
 
-    @classmethod
-    def stop(cls):
-        stop_req_path = os.path.join(cls.getHomevarPath(), 'stop')
+    def stop(self):
+        stop_req_path = os.path.join(self.getHomevarPath(), 'stop')
         Path(stop_req_path).touch()
         return True
 
-    @classmethod
-    def stopRequested(cls):
-        stop_req_path = os.path.join(cls.getHomevarPath(), 'stop')
+    def stopRequested(self):
+        stop_req_path = os.path.join(self.getHomevarPath(), 'stop')
         return os.path.exists(stop_req_path)
 
-    @classmethod
-    def stopRemove(cls):
-        stop_req_path = os.path.join(cls.getHomevarPath(), 'stop')
+    def stopRemove(self):
+        stop_req_path = os.path.join(self.getHomevarPath(), 'stop')
         return os.remove(stop_req_path)
 
-    @classmethod
-    def getForcedInfo(cls):
-        force_file_path = os.path.join(cls.getHomevarPath(), 'force')
+    def getForcedInfo(self):
+        force_file_path = os.path.join(self.getHomevarPath(), 'force')
         if os.path.exists(force_file_path):
             with open(force_file_path, 'r') as force_file:
                 data = json.load(force_file)

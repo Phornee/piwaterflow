@@ -3,6 +3,7 @@ from flask_compress import Compress
 from datetime import datetime
 from .waterflow import Waterflow
 import json
+import copy
 
 class PiWWWaterflowService:
 
@@ -11,11 +12,12 @@ class PiWWWaterflowService:
         self.app.add_url_rule('/', 'index', self.index, methods=['GET'])
         self.app.add_url_rule('/service', 'service', self.service, methods=['GET', 'POST'])
         self.app.add_url_rule('/log', 'log', self.log, methods=['GET'])
-        self.app.add_url_rule('/force', 'force', self.force, methods=['GET','POST'])
+        self.app.add_url_rule('/force', 'force', self.force, methods=['GET', 'POST'])
         self.app.add_url_rule('/stop', 'stop', self.stop, methods=['GET', 'POST'])
         self.app.add_url_rule('/config', 'config', self.config, methods=['GET'])
         self.app.add_url_rule('/waterflow', 'waterflow', self.waterflow, methods=['GET', 'POST'])
         Compress(self.app)
+        self.waterflow = Waterflow()
 
     def getApp(self):
         return self.app
@@ -23,18 +25,25 @@ class PiWWWaterflowService:
     def run(self):
         self.app.run()
 
-    # mainpage
     def index(self):
         return 'This is the Pi server.'
 
+    def _getPublicConfig(self):
+        config = copy.deepcopy(self.waterflow.getConfig())
+        del config['influxdbconn']
+        return config
+
     def service(self):
         if request.method == 'GET':
-            responsedict = {}
-            responsedict['log'] = Waterflow.getLog()
-            responsedict['forced'] = Waterflow.getForcedInfo()
-            responsedict['stop'] = Waterflow.stopRequested()
-            responsedict['config'] = Waterflow.getConfig()
-            responsedict['alive'] = Waterflow.isLoopingCorrectly()
+            responsedict = {'log': self.waterflow.getLog(),
+                            'forced': self.waterflow.getForcedInfo(),
+                            'stop': self.waterflow.stopRequested(),
+                            'config': self._getPublicConfig(),
+                            'alive': self.waterflow.isLoopingCorrectly()
+                            }
+            responsedict['config']['programs'][0]['start_time'] = responsedict['config']['programs'][0]['start_time'].strftime('%H:%M:%S')
+            responsedict['config']['programs'][1]['start_time'] = responsedict['config']['programs'][1]['start_time'].strftime('%H:%M:%S')
+
             response = jsonify(responsedict)
             response.headers['Pragma'] = 'no-cache'
             response.headers["Expires"] = 0
@@ -43,7 +52,7 @@ class PiWWWaterflowService:
 
     # log
     def log(self):
-        log_string = Waterflow.getLog()
+        log_string = self.waterflow.getLog()
 
         response = make_response(log_string)
         response.headers["content-type"] = "text/plain"
@@ -54,23 +63,23 @@ class PiWWWaterflowService:
         if request.method == 'POST':
             type_force = request.form.get('type')
             value_force = request.form.get('value')
-            Waterflow.force(type_force, int(value_force))
+            self.waterflow.force(type_force, int(value_force))
             return redirect(url_for('waterflow'))
         elif request.method == 'GET':
-            forced_data = Waterflow.getForcedInfo()
+            forced_data = self.waterflow.getForcedInfo()
             return json.dumps(forced_data)
 
     def stop(self):
         if request.method == 'GET':
-            stop_requested = Waterflow.stopRequested()
+            stop_requested = self.waterflow.stopRequested()
             return "true" if stop_requested else "false"
         else:
-            stop_requested = Waterflow.stop()
+            stop_requested = self.waterflow.stop()
             return "true" if stop_requested else "false"
 
     def config(self):
         if request.method == 'GET':
-            parsed_config = Waterflow.getConfig()
+            parsed_config = self._getPublicConfig()
             # API should only expose non-secret parameters. Lets remove secrets
             response = make_response(parsed_config)
             response.headers["content-type"] = "text/plain"
@@ -88,21 +97,18 @@ class PiWWWaterflowService:
         program['enabled'] = enabled1_checkbox_value is not None
 
     def waterflow(self):
-        parsed_config = Waterflow.getConfig()
+        parsed_config = self.waterflow.getConfig()
+
+        # Sort the programs by time
+        parsed_config['programs'].sort(key=lambda prog: prog['start_time'])
 
         if request.method == 'POST':  # this block is only entered when the form is submitted
             self._changeProgram(parsed_config['programs'][0], 'time1', 'valve11', 'valve12', 'prog1enabled')
             self._changeProgram(parsed_config['programs'][1], 'time2', 'valve21', 'valve22', 'prog2enabled')
 
-            Waterflow.setConfig(parsed_config)
+            self.waterflow.setConfig(parsed_config)
 
             return redirect(url_for('waterflow'))  # Redirect so that we dont RE-POST same data again when refreshing
-
-        for program in parsed_config['programs']:
-            program['start_time'] = datetime.strptime(program['start_time'], '%H:%M:%S')
-
-        # Sort the programs by time
-        parsed_config['programs'].sort(key=lambda prog: prog['start_time'])
 
         return render_template('form.html')
 
