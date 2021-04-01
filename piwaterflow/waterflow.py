@@ -143,7 +143,7 @@ class Waterflow(ManagedClass):
         config = self.getConfig()
         if (type_force == 'program' and 0 <= value < len(config['programs'])) or \
            (type_force == 'valve' and 0 <= value < len(config['valves'])):
-            force_file_path = os.path.join(cls.getHomevarPath(), 'force')
+            force_file_path = os.path.join(self.getHomevarPath(), 'force')
             with open(force_file_path, 'w') as force_file:
                 force_file.write('{{"type":"{0}","value":{1}}}'.format(type_force, value))
                 return True

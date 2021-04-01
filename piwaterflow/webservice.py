@@ -41,6 +41,7 @@ class PiWWWaterflowService:
                             'config': self._getPublicConfig(),
                             'alive': self.waterflow.isLoopingCorrectly()
                             }
+            # Change to string so that javascript can manege with it
             responsedict['config']['programs'][0]['start_time'] = responsedict['config']['programs'][0]['start_time'].strftime('%H:%M:%S')
             responsedict['config']['programs'][1]['start_time'] = responsedict['config']['programs'][1]['start_time'].strftime('%H:%M:%S')
 
