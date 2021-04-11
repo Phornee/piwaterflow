@@ -1,5 +1,6 @@
 import RPi.GPIO as GPIO
 import os
+import copy
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -38,6 +39,17 @@ class Waterflow(ManagedClass):
 
         # Sort the programs by time
         self.config['programs'].sort(key=lambda prog: prog['start_time'])
+
+    def writeConfig(self, config):
+        conf = copy.deepcopy(config)
+
+        self.setCache(config)
+
+        # Convert the date back from datetime to string
+        for program in conf['programs']:
+            program['start_time'] = program['start_time'].strftime('%H:%M:%S')
+
+        super().writeConfig(conf)
 
     def _timeToStr(self, time_var):
         return time_var.strftime('%Y-%m-%d %H:%M:%S\n')
@@ -178,7 +190,7 @@ class Waterflow(ManagedClass):
             time_count = time_count + 5
             time.sleep(5)  # Every X seconds
 
-    def _emitMetric(self, action, forced):
+    def _emitActionMetric(self, action, forced):
         write_api = self.conn.write_api(write_options=SYNCHRONOUS)
 
         point = Point('piwaterflow') \
@@ -268,18 +280,18 @@ class Waterflow(ManagedClass):
                         if forced_type == "program":
                             self.logger.info('Forced program {} executing now.'.format(forced_value))
                             # ------------------------
-                            self._emitMetric('prog{}'.format(forced_value), True)
+                            self._emitActionMetric('prog{}'.format(forced_value), True)
                             self._executeProgram(forced_value)
                             self._writeLastProgramTime(self._timeToStr(current_time))
                         elif forced_type == "valve":
                             # ------------------------
-                            self._emitMetric('valve{}'.format(forced_value), True)
+                            self._emitActionMetric('valve{}'.format(forced_value), True)
                             self._executeValve(forced_value)
                     else:
                         new_next_program_time, calculated_program_number = self._recalcNextProgram(last_program_time)
                         if new_next_program_time is not None and current_time >= new_next_program_time:
                             # ------------------------
-                            self._emitMetric('prog{}'.format(calculated_program_number), False)
+                            self._emitActionMetric('prog{}'.format(calculated_program_number), False)
                             self._executeProgram(calculated_program_number)
                             self._writeLastProgramTime(self._timeToStr(current_time))
 
@@ -289,7 +301,7 @@ class Waterflow(ManagedClass):
 
                 if self.stopRequested():
                     self.logger.info('Activity stopped.')
-                    self._emitMetric('Stop', True)
+                    self._emitActionMetric('Stop', True)
                     self.stopRemove()
 
                 # Recalc next program time
