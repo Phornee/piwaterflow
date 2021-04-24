@@ -19,6 +19,7 @@ valves:
 - name: grass
   pin: 35
 max_valve_time: 10
+humidity_threshold: 90
 influxdbconn:
   token: ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   org: +++++++++++++

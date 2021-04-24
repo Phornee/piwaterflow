@@ -219,6 +219,20 @@ class Waterflow(ManagedClass):
         GPIO.output(self.config['inverter_relay_pin'], GPIO.LOW)  # INVERTER always OFF after operations
         self.logger.info('Inverter relay OFF.')
 
+    def _skipProgram(self):
+        if self.is_raspberry_pi():
+            import adafruit_dht
+            dhtSensor = adafruit_dht.DHT22(self.config['pin'])
+            humidity = dhtSensor.humidity
+            temp_c = dhtSensor.temperature
+            if humidity >= self.config['humidity_threshold']:
+                self.logger.info('(humidity {} > {}.'.format(humidity, self.config['humidity_threshold']))
+                return True
+            else:
+                return False
+        else:
+            return False
+
     def _executeProgram(self, program_number):
         """
         Works for regular programs, or forced ones (if program number is sent)
@@ -291,8 +305,9 @@ class Waterflow(ManagedClass):
                         new_next_program_time, calculated_program_number = self._recalcNextProgram(last_program_time)
                         if new_next_program_time is not None and current_time >= new_next_program_time:
                             # ------------------------
-                            self._emitActionMetric('prog{}'.format(calculated_program_number), False)
-                            self._executeProgram(calculated_program_number)
+                            if not self._skipProgram():
+                                self._emitActionMetric('prog{}'.format(calculated_program_number), False)
+                                self._executeProgram(calculated_program_number)
                             self._writeLastProgramTime(self._timeToStr(current_time))
 
                 if forced_info is not None:
@@ -311,7 +326,6 @@ class Waterflow(ManagedClass):
             finally:
                 GPIO.cleanup()
                 self.releaseLock()
-
 
 if __name__ == "__main__":
     waterflow_instance = Waterflow()
