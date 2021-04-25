@@ -220,6 +220,7 @@ class Waterflow(ManagedClass):
         self.logger.info('Inverter relay OFF.')
 
     def _skipProgram(self):
+        print(self.config['humidity_threshold'])
         if self.is_raspberry_pi():
             import adafruit_dht
             dhtSensor = adafruit_dht.DHT22(self.config['pin'])
@@ -322,7 +323,8 @@ class Waterflow(ManagedClass):
                 # Recalc next program time
                 self._logNextProgramTime(current_time)
             except Exception as e:
-                self.logger.error(f"Exception looping: {e}")
+                self.logger.error("Exception looping: {}".format(str(e)))
+                raise
             finally:
                 GPIO.cleanup()
                 self.releaseLock()
