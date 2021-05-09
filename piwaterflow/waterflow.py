@@ -5,6 +5,7 @@ import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from baseutils_phornee import ManagedClass
+from baseutils_phornee import Logger
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
 import json
@@ -13,6 +14,8 @@ class Waterflow(ManagedClass):
 
     def __init__(self):
         super().__init__(execpath=__file__)
+
+        self.logger = Logger({'modulename': self.getClassName(), 'logpath': 'log'})
 
         token = self.config['influxdbconn']['token']
         self.org = self.config['influxdbconn']['org']
@@ -23,12 +26,6 @@ class Waterflow(ManagedClass):
     @classmethod
     def getClassName(cls):
         return "waterflow"
-
-    def getLog(self):
-        log_path = os.path.join(self.getHomevarPath(), 'log/waterflow.log')
-
-        with open(log_path, 'r') as file:
-            return file.read()
 
     def readConfig(self):
         super().readConfig()
@@ -121,6 +118,7 @@ class Waterflow(ManagedClass):
 
     def getLock(self):
         """
+        This is to ensure that only one execution will run from cron at the same time
         Use file as a lock... not using DB locks because we want to maximize resiliency
         """
         lock_path = os.path.join(self.homevar, 'lock')
@@ -132,6 +130,7 @@ class Waterflow(ManagedClass):
             modified_time = datetime.fromtimestamp(os.path.getmtime(lock_path))
             if (datetime.utcnow() - modified_time) > timedelta(minutes=20):
                 self.logger.warning('Lock expired: Last loop ended abnormally?.')
+                Path(lock_path).touch() # Previous token expired (previous loop crashed?)... so we will retouch to try again
                 return True
         return False
 
@@ -184,7 +183,13 @@ class Waterflow(ManagedClass):
         else:
             return None
 
+    def getLog(self):
+        return self.logger.getLog()
+
     def _sleep(self, time_sleep):
+        """
+        Sleep "time_sleep" time, but checks every 5 seconds if a stop has been requested
+        """
         time_count = 0
         while not self.stopRequested() and time_count < time_sleep:
             time_count = time_count + 5
@@ -261,7 +266,7 @@ class Waterflow(ManagedClass):
 
     def _logNextProgramTime(self, current_time):
 
-        log = self.getLog()
+        log = self.logger.getLog()
 
         lines = log.split('\n')
         last_line = lines[-2]
@@ -276,12 +281,8 @@ class Waterflow(ManagedClass):
             self.logger.info(string_to_log)
 
     def loop(self):
-        if self.getLock():  # To ensure a single execution
+        if self.getLock():  # To ensure a single execution despite of cron overlapping
             try:
-                # Updates "modified" time, so that we can keep track about waterflow looping
-                token_path = os.path.join(self.homevar, 'token')
-                Path(token_path).touch()
-
                 current_time = datetime.now()
                 forced_info = self.getForcedInfo()
 
@@ -322,6 +323,11 @@ class Waterflow(ManagedClass):
 
                 # Recalc next program time
                 self._logNextProgramTime(current_time)
+
+                # Updates "modified" time AT THE END, so that we can keep track about waterflow looping SUCCESFULLY.
+                token_path = os.path.join(self.homevar, 'token')
+                Path(token_path).touch()
+
             except Exception as e:
                 self.logger.error("Exception looping: {}".format(str(e)))
                 raise
@@ -330,6 +336,7 @@ class Waterflow(ManagedClass):
                 self.releaseLock()
 
 if __name__ == "__main__":
+
     waterflow_instance = Waterflow()
     waterflow_instance.loop()
 
