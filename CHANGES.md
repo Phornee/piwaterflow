@@ -1,0 +1,4 @@
+- 0.2.3:
+  - https://phornee.atlassian.net/jira/software/projects/PIW/boards/1?selectedIssue=PIW-2
+  - Added threshold to avoid start program if more than 10 minutes passed
+  - Added dateutc field to the service response

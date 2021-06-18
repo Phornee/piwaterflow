@@ -65,17 +65,21 @@ class Waterflow(ManagedClass):
 
 
     def _recalcNextProgram(self, last_program_time):
+        """
+        Calculates which is the next program to be executed
+        """
         next_program_time = None
         program_number = -1
 
         current_time = datetime.now().replace(microsecond=0)
 
-        # Find if next program is today
+        # Find if next program is today, considering the last program time executed
         for idx, program in enumerate(self.config['programs']):
             if program['enabled'] == True:
                 candidate_time = current_time.replace(hour=program['start_time'].hour,
                                                       minute=program['start_time'].minute,
                                                       second=0)
+                # If this candidate is after the last one executed AND its no more that 10 minutes in the past, choose it
                 if candidate_time > last_program_time:
                     next_program_time = candidate_time
                     program_number = idx
@@ -305,7 +309,10 @@ class Waterflow(ManagedClass):
                             self._executeValve(forced_value)
                     else:
                         new_next_program_time, calculated_program_number = self._recalcNextProgram(last_program_time)
-                        if new_next_program_time is not None and current_time >= new_next_program_time:
+                        #If we have reached the time of the new_program_time, BUT not by more than 10 minutes...
+                        if new_next_program_time is not None \
+                           and current_time >= new_next_program_time \
+                           and (new_next_program_time + timedelta(minutes=10)) < current_time:
                             # ------------------------
                             if not self._skipProgram():
                                 self._emitActionMetric('prog{}'.format(calculated_program_number), False)
