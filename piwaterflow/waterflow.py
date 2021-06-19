@@ -229,19 +229,20 @@ class Waterflow(ManagedClass):
         self.logger.info('Inverter relay OFF.')
 
     def _skipProgram(self):
-        print(self.config['humidity_threshold'])
-        if self.is_raspberry_pi():
-            import adafruit_dht
-            dhtSensor = adafruit_dht.DHT22(self.config['pin'])
-            humidity = dhtSensor.humidity
-            temp_c = dhtSensor.temperature
-            if humidity >= self.config['humidity_threshold']:
-                self.logger.info('(humidity {} > {}.'.format(humidity, self.config['humidity_threshold']))
-                return True
-            else:
-                return False
-        else:
-            return False
+        # print(self.config['humidity_threshold'])
+        # if self.is_raspberry_pi():
+        #     import adafruit_dht
+        #     dhtSensor = adafruit_dht.DHT22(self.config['pin'])
+        #     humidity = dhtSensor.humidity
+        #     temp_c = dhtSensor.temperature
+        #     if humidity >= self.config['humidity_threshold']:
+        #         self.logger.info('(humidity {} > {}.'.format(humidity, self.config['humidity_threshold']))
+        #         return True
+        #     else:
+        #         return False
+        # else:
+        #    return False
+        return False
 
     def _executeProgram(self, program_number):
         """
