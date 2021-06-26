@@ -277,7 +277,7 @@ class Waterflow(ManagedClass):
         last_line = lines[-2]
 
         new_next_program_time, _ = self._recalcNextProgram(current_time)
-        if new_next_program_time is not None:
+        if new_next_program_time:
             string_to_log = 'Next program: %s.' % new_next_program_time.strftime('%Y-%m-%d %H:%M')
         else:
             string_to_log = 'NO active program!'
@@ -295,7 +295,7 @@ class Waterflow(ManagedClass):
                     self._setupGPIO(self.config['valves'])
                     last_program_time = self._readLastProgramTime()
 
-                    if forced_info is not None:
+                    if forced_info:
                         forced_type = forced_info.get("type")
                         forced_value = forced_info.get("value")
                         if forced_type == "program":
@@ -310,17 +310,23 @@ class Waterflow(ManagedClass):
                             self._executeValve(forced_value)
                     else:
                         new_next_program_time, calculated_program_number = self._recalcNextProgram(last_program_time)
-                        #If we have reached the time of the new_program_time, BUT not by more than 10 minutes...
-                        if new_next_program_time is not None \
-                           and current_time >= new_next_program_time \
-                           and (new_next_program_time + timedelta(minutes=10)) < current_time:
+                        if new_next_program_time:
                             # ------------------------
-                            if not self._skipProgram():
+                            time_reached = current_time >= new_next_program_time
+                            time_threshold_exceeded = current_time > (new_next_program_time + timedelta(minutes=10))
+                            skip_program = self._skipProgram()
+                            # If we have reached the time of the new_program_time, BUT not by more than 10 minutes...
+                            if time_reached and not time_threshold_exceeded and not skip_program:
                                 self._emitActionMetric('prog{}'.format(calculated_program_number), False)
                                 self._executeProgram(calculated_program_number)
-                            self._writeLastProgramTime(self._timeToStr(current_time))
+                                program_executed = True
+                            else:
+                                program_executed = False
 
-                if forced_info is not None:
+                            if program_executed or skip_program or time_threshold_exceeded:
+                                self._writeLastProgramTime(self._timeToStr(current_time))
+
+                if forced_info:
                     # Remove force token file
                     os.remove(os.path.join(self.getHomevarPath(), 'force'))
 

@@ -3,7 +3,7 @@ from flask_compress import Compress
 from datetime import datetime
 from .waterflow import Waterflow
 import json
-import copy
+from importlib_metadata import version
 
 class PiWWWaterflowService:
 
@@ -35,12 +35,18 @@ class PiWWWaterflowService:
 
     def service(self):
         if request.method == 'GET':
+            try:
+                ver = version('piwaterflow')
+            except Exception:
+                ver = '?.?.?'
+
             responsedict = {'dateutc': datetime.utcnow().strftime('%H:%M:%S'),
                             'log': self.waterflow.getLog(),
                             'forced': self.waterflow.getForcedInfo(),
                             'stop': self.waterflow.stopRequested(),
                             'config': self._getPublicConfig(),
-                            'alive': self.waterflow.isLoopingCorrectly()
+                            'alive': self.waterflow.isLoopingCorrectly(),
+                            'version': ver
                             }
             # Change to string so that javascript can manage with it
             responsedict['config']['programs'][0]['start_time'] = responsedict['config']['programs'][0]['start_time'].strftime('%H:%M:%S')

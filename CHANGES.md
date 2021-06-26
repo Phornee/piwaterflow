@@ -4,3 +4,10 @@
   - Added dateutc field to the service response
 - 0.2.4:
   - Bugfix: Reading humidity from DHT22 was conflicting with GPIO
+- 0.2.5
+  - Bugfix: Error in time threshold filtering
+- 0.2.6
+  - Bugfix: Changing program was not updating waterflow's cache
+  - Added backend version in service response
+- 0.2.7
+  - Bugfix: Incorrent import importlib_metadata
