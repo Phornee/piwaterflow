@@ -147,12 +147,15 @@ class Waterflow(ManagedClass):
             self.logger.error(f"Could not release lock.")
 
     def isLoopingCorrectly(self):
+        return (datetime.utcnow() - self.getLastLoopTime()) < timedelta(minutes=10)
+
+    def getLastLoopTime(self):
         tokenpath = os.path.join(self.getHomevarPath(), 'token')
 
         modTimesinceEpoc = os.path.getmtime(tokenpath)
         modificationTime = datetime.utcfromtimestamp(modTimesinceEpoc)
 
-        return (datetime.utcnow() - modificationTime) < timedelta(minutes=10)
+        return modificationTime
 
     def force(self, type_force, value):
         config = self.getConfig()

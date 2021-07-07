@@ -45,7 +45,7 @@ class PiWWWaterflowService:
                             'forced': self.waterflow.getForcedInfo(),
                             'stop': self.waterflow.stopRequested(),
                             'config': self._getPublicConfig(),
-                            'alive': self.waterflow.isLoopingCorrectly(),
+                            'lastlooptime': self.waterflow.getLastLoopTime().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
                             'version': ver
                             }
             # Change to string so that javascript can manage with it
