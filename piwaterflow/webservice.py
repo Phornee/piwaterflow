@@ -40,8 +40,7 @@ class PiWWWaterflowService:
             except Exception:
                 ver = '?.?.?'
 
-            responsedict = {'dateutc': datetime.utcnow().strftime('%H:%M:%S'),
-                            'log': self.waterflow.getLog(),
+            responsedict = {'log': self.waterflow.getLog(),
                             'forced': self.waterflow.getForcedInfo(),
                             'stop': self.waterflow.stopRequested(),
                             'config': self._getPublicConfig(),

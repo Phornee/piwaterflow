@@ -2,7 +2,7 @@ import RPi.GPIO as GPIO
 import os
 import copy
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from baseutils_phornee import ManagedClass
 from baseutils_phornee import Logger
@@ -30,9 +30,13 @@ class Waterflow(ManagedClass):
     def readConfig(self):
         super().readConfig()
 
+
+
         # Convert the date from string to datetime object
         for program in self.config['programs']:
-            program['start_time'] = datetime.strptime(program['start_time'], '%H:%M:%S')
+            progtime = datetime.strptime(program['start_time'], '%H:%M:%S')
+            progtime = self._setTimezoneUTC(progtime)
+            program['start_time'] = progtime
 
         # Sort the programs by time
         self.config['programs'].sort(key=lambda prog: prog['start_time'])
@@ -47,6 +51,14 @@ class Waterflow(ManagedClass):
             program['start_time'] = program['start_time'].strftime('%H:%M:%S')
 
         super().writeConfig(conf)
+
+    def _setTimezoneUTC(self, date):
+        import pytz
+
+        return pytz.timezone('UTC').localize(date)
+
+    def _getNowUTC(self):
+        return datetime.now(timezone.utc)
 
     def _timeToStr(self, time_var):
         return time_var.strftime('%Y-%m-%d %H:%M:%S\n')
@@ -71,7 +83,8 @@ class Waterflow(ManagedClass):
         next_program_time = None
         program_number = -1
 
-        current_time = datetime.now().replace(microsecond=0)
+        #current_time = self._getNowUTC().replace(microsecond=0)
+        current_time = datetime.now()
 
         # Find if next program is today, considering the last program time executed
         for idx, program in enumerate(self.config['programs']):
@@ -107,8 +120,9 @@ class Waterflow(ManagedClass):
         try:
             with open(last_program_path, 'r') as file:
                 data = file.readlines()
-                last_program_time = datetime.strptime(data[0][:-1], '%Y-%m-%d %H:%M:%S')
+                last_program_time = datetime.strptime(data[0][:-1], '%Y-%m-%d %H:%M:%S', tzinfo=datetime.timezone.utc)
         except Exception as e:
+            #last_program_time = self._getNowUTC()
             last_program_time = datetime.now()
             with open(last_program_path, 'w') as file:
                 time_str = self._timeToStr(last_program_time)
@@ -291,6 +305,7 @@ class Waterflow(ManagedClass):
     def loop(self):
         if self.getLock():  # To ensure a single execution despite of cron overlapping
             try:
+                #current_time = self._getNowUTC()
                 current_time = datetime.now()
                 forced_info = self.getForcedInfo()
 
