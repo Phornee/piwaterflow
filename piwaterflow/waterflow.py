@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from baseutils_phornee import ManagedClass
 from baseutils_phornee import Logger
+from baseutils_phornee import Config
 from influxdb import InfluxDBClient
 
 import json
@@ -16,6 +17,7 @@ class Waterflow(ManagedClass):
         super().__init__(execpath=__file__)
 
         self.logger = Logger({'modulename': self.getClassName(), 'logpath': 'log'})
+        self.config = Config({'modulename': self.getClassName(), 'execpath': __file__})
 
         try:
             host = self.config['influxdbconn']['host']
@@ -385,4 +387,5 @@ if __name__ == "__main__":
 
     waterflow_instance = Waterflow()
     waterflow_instance.loop()
+
 
