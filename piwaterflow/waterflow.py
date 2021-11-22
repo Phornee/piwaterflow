@@ -6,8 +6,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from baseutils_phornee import ManagedClass
 from baseutils_phornee import Logger
-from influxdb_client import InfluxDBClient, Point, WritePrecision
-from influxdb_client.client.write_api import SYNCHRONOUS
+from influxdb import InfluxDBClient
+
 import json
 
 class Waterflow(ManagedClass):
@@ -17,11 +17,21 @@ class Waterflow(ManagedClass):
 
         self.logger = Logger({'modulename': self.getClassName(), 'logpath': 'log'})
 
-        token = self.config['influxdbconn']['token']
-        self.org = self.config['influxdbconn']['org']
-        self.bucket = self.config['influxdbconn']['bucket']
+        try:
+            host = self.config['influxdbconn']['host']
+            user = self.config['influxdbconn']['user']
+            password = self.config['influxdbconn']['password']
+            bucket = self.config['influxdbconn']['bucket']
+        except Exception as e:
+            self.logger.warning('Error getting connection credentials to InfluxDB.')
+            pass
 
-        self.conn = InfluxDBClient(url=self.config['influxdbconn']['url'], token=token)
+        try:
+            self.conn = InfluxDBClient(host=host, username=user, password=password, database=bucket)
+        except Exception as e:
+            self.logger.warning('Connection to InfluxDB failed: %s.' % host)
+            self.conn = None
+            pass
 
     @classmethod
     def getClassName(cls):
@@ -29,8 +39,6 @@ class Waterflow(ManagedClass):
 
     def readConfig(self):
         super().readConfig()
-
-
 
         # Convert the date from string to datetime object
         for program in self.config['programs']:
@@ -217,15 +225,21 @@ class Waterflow(ManagedClass):
             time.sleep(5)  # Every X seconds
 
     def _emitActionMetric(self, action, forced):
-        write_api = self.conn.write_api(write_options=SYNCHRONOUS)
-
-        point = Point('piwaterflow') \
-            .tag('action', action) \
-            .tag('forced', forced) \
-            .field('fake', 0) \
-            .time(datetime.utcnow(), WritePrecision.NS)
-
-        write_api.write(self.bucket, self.org, point)
+        if self.conn:
+            json_body = [
+                {
+                    "measurement": "piwaterflow",
+                    "tags": {
+                        "action": action,
+                        "forced": forced
+                    },
+                    "time": datetime.utcnow(),
+                    "fields": {
+                        "fake": 0
+                    }
+                }
+            ]
+            self.conn.write_points(json_body)
 
     def _executeValve(self, valve):
         # ------------------------------------

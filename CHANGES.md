@@ -14,3 +14,5 @@
 - 0.2.8
   - https://phornee.atlassian.net/jira/software/projects/PIW/boards/1?selectedIssue=PIW-12
   - getLastLoopTime instead of isLooping Correctly
+- 0.2.9
+  - Influxdb 1.6.4 connection 
