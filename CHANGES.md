@@ -18,3 +18,5 @@
   - Influxdb 1.6.4 connection
 - 0.2.10
   - New Config 
+- 0.2.11
+  - Fix Config writting 

@@ -18,6 +18,7 @@ class Waterflow(ManagedClass):
 
         self.logger = Logger({'modulename': self.getClassName(), 'logpath': 'log'})
         self.config = Config({'modulename': self.getClassName(), 'execpath': __file__})
+        self.manageInputConfig()
 
         try:
             host = self.config['influxdbconn']['host']
@@ -39,9 +40,10 @@ class Waterflow(ManagedClass):
     def getClassName(cls):
         return "waterflow"
 
-    def readConfig(self):
-        super().readConfig()
+    def getConfigCopy(self):
+        return self.config.getAll()
 
+    def manageInputConfig(self):
         # Convert the date from string to datetime object
         for program in self.config['programs']:
             progtime = datetime.strptime(program['start_time'], '%H:%M:%S')

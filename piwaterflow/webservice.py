@@ -29,7 +29,7 @@ class PiWWWaterflowService:
         return 'This is the Pi server.'
 
     def _getPublicConfig(self):
-        config = self.waterflow.getConfig()
+        config = self.waterflow.getConfigCopy()
         del config['influxdbconn']
         return config
 
@@ -105,13 +105,13 @@ class PiWWWaterflowService:
         program['enabled'] = enabled1_checkbox_value is not None
 
     def waterflow(self):
-        parsed_config = self.waterflow.getConfig()
+        parsed_config = self.waterflow.config
 
         if request.method == 'POST':  # this block is only entered when the form is submitted
             self._changeProgram(parsed_config['programs'][0], 'time1', 'valve11', 'valve12', 'prog1enabled')
             self._changeProgram(parsed_config['programs'][1], 'time2', 'valve21', 'valve22', 'prog2enabled')
 
-            self.waterflow.writeConfig(parsed_config)
+            self.waterflow.config.update({'programs': parsed_config['programs']})
 
             return redirect(url_for('waterflow'))  # Redirect so that we dont RE-POST same data again when refreshing
 
