@@ -20,3 +20,5 @@
   - New Config 
 - 0.2.11
   - Fix Config writting 
+- 0.2.12
+  - Config subclass 

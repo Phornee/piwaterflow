@@ -4,8 +4,8 @@ import copy
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from baseutils_phornee import ManagedClass
-from baseutils_phornee import Logger
+from baseutils_phornee import ManagedClass, Logger
+from .configwaterflow import WaterflowConfig
 from baseutils_phornee import Config
 from influxdb import InfluxDBClient
 
@@ -17,8 +17,7 @@ class Waterflow(ManagedClass):
         super().__init__(execpath=__file__)
 
         self.logger = Logger({'modulename': self.getClassName(), 'logpath': 'log'})
-        self.config = Config({'modulename': self.getClassName(), 'execpath': __file__})
-        self.manageInputConfig()
+        self.config = WaterflowConfig({'modulename': self.getClassName(), 'execpath': __file__})
 
         try:
             host = self.config['influxdbconn']['host']
@@ -40,29 +39,12 @@ class Waterflow(ManagedClass):
     def getClassName(cls):
         return "waterflow"
 
-    def getConfigCopy(self):
-        return self.config.getAll()
+    def updateConfig(self, programs):
+        # Update config in mem
+        self.config.update({'programs': programs})
 
-    def manageInputConfig(self):
-        # Convert the date from string to datetime object
-        for program in self.config['programs']:
-            progtime = datetime.strptime(program['start_time'], '%H:%M:%S')
-            progtime = self._setTimezoneUTC(progtime)
-            program['start_time'] = progtime
-
-        # Sort the programs by time
-        self.config['programs'].sort(key=lambda prog: prog['start_time'])
-
-    def writeConfig(self, config):
-        conf = copy.deepcopy(config)
-
-        self.setCache(config)
-
-        # Convert the date back from datetime to string
-        for program in conf['programs']:
-            program['start_time'] = program['start_time'].strftime('%H:%M:%S')
-
-        super().writeConfig(conf)
+        # Write back config to disk
+        self.config.write()
 
     def _setTimezoneUTC(self, date):
         import pytz

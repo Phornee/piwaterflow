@@ -29,7 +29,7 @@ class PiWWWaterflowService:
         return 'This is the Pi server.'
 
     def _getPublicConfig(self):
-        config = self.waterflow.getConfigCopy()
+        config = self.waterflow.config.getDictCopy()
         del config['influxdbconn']
         return config
 
@@ -111,7 +111,7 @@ class PiWWWaterflowService:
             self._changeProgram(parsed_config['programs'][0], 'time1', 'valve11', 'valve12', 'prog1enabled')
             self._changeProgram(parsed_config['programs'][1], 'time2', 'valve21', 'valve22', 'prog2enabled')
 
-            self.waterflow.config.update({'programs': parsed_config['programs']})
+            self.waterflow.updateConfig(programs=parsed_config['programs'])
 
             return redirect(url_for('waterflow'))  # Redirect so that we dont RE-POST same data again when refreshing
 
