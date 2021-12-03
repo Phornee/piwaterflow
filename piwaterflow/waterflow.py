@@ -1,12 +1,10 @@
 import RPi.GPIO as GPIO
 import os
-import copy
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from baseutils_phornee import ManagedClass, Logger
 from .configwaterflow import WaterflowConfig
-from baseutils_phornee import Config
 from influxdb import InfluxDBClient
 
 import json
