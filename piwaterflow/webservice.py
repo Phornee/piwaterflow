@@ -1,7 +1,7 @@
 from flask import Flask, request, make_response, render_template, redirect, url_for, jsonify
 from flask_compress import Compress
 from datetime import datetime
-from .waterflow import Waterflow
+from waterflow import Waterflow
 import json
 from importlib_metadata import version
 
