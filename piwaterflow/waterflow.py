@@ -4,7 +4,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from baseutils_phornee import ManagedClass, Logger
-from configwaterflow import WaterflowConfig
+from .configwaterflow import WaterflowConfig
 from influxdb import InfluxDBClient
 
 import json

@@ -24,5 +24,5 @@
   - Config subclass 
 - 0.2.13
   - Fix adding the configwaterflow in init 
-- 0.2.18
+- 0.2.20
   - Fix 
