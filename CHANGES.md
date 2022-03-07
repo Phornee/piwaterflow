@@ -26,3 +26,5 @@
   - Fix adding the configwaterflow in init 
 - 0.2.20
   - Fix 
+- 0.3.0
+  - New config class

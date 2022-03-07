@@ -48,8 +48,8 @@ class PiWWWaterflowService:
                             'version': ver
                             }
             # Change to string so that javascript can manage with it
-            responsedict['config']['programs'][0]['start_time'] = responsedict['config']['programs'][0]['start_time'].strftime('%H:%M:%S')
-            responsedict['config']['programs'][1]['start_time'] = responsedict['config']['programs'][1]['start_time'].strftime('%H:%M:%S')
+            responsedict['config']['programs'][0]['start_time'] = responsedict['config']['programs'][0]['start_time'].strftime('%H:%M')
+            responsedict['config']['programs'][1]['start_time'] = responsedict['config']['programs'][1]['start_time'].strftime('%H:%M')
 
             response = jsonify(responsedict)
             response.headers['Pragma'] = 'no-cache'
@@ -94,10 +94,9 @@ class PiWWWaterflowService:
             return response
 
     def _changeProgram(self, program, form_time_name, form_valve_0_name, form_valve_1_name, form_enabled_name):
-        #program['start_time'] = datetime.strptime(program['start_time'], '%H:%M:%S')
-        time1 = datetime.strptime(request.form.get(form_time_name), '%H:%M:%S')
+        inputbox_text = request.form.get(form_time_name)
+        time1 = datetime.strptime(inputbox_text, '%H:%M')
         new_datetime = program['start_time'].replace(hour=time1.hour, minute=time1.minute)
-        #program['start_time'] = new_datetime.strftime('%H:%M:%S')
         program['start_time'] = new_datetime
         program['valves_times'][0] = int(request.form.get(form_valve_0_name))
         program['valves_times'][1] = int(request.form.get(form_valve_1_name))
@@ -105,8 +104,7 @@ class PiWWWaterflowService:
         program['enabled'] = enabled1_checkbox_value is not None
 
     def waterflow(self):
-        parsed_config = self.waterflow.config
-
+        parsed_config = self.waterflow.config.getDictCopy()
         if request.method == 'POST':  # this block is only entered when the form is submitted
             self._changeProgram(parsed_config['programs'][0], 'time1', 'valve11', 'valve12', 'prog1enabled')
             self._changeProgram(parsed_config['programs'][1], 'time2', 'valve21', 'valve22', 'prog2enabled')
