@@ -74,7 +74,7 @@ class Waterflow(ManagedClass):
         Calculates which is the next program to be executed
         Return: UTC time of next program
         """
-        next_program_time = None
+        next_program_time_utc = None
         program_number = -1
 
         current_time = datetime.now().replace(microsecond=0)
@@ -85,24 +85,25 @@ class Waterflow(ManagedClass):
                 candidate_time = current_time.replace(hour=program['start_time'].hour,
                                                       minute=program['start_time'].minute,
                                                       second=0)
+                candidate_time_utc = candidate_time.astimezone(pytz.utc)
                 # If this candidate is after the last one executed AND its no more that 10 minutes in the past, choose it
-                if candidate_time.astimezone(pytz.utc) > last_program_time_utc:
-                    next_program_time = candidate_time
+                if candidate_time_utc > last_program_time_utc:
+                    next_program_time_utc = candidate_time_utc
                     program_number = idx
                     break
 
         # If its not today, it could be tomorrow... find the first one enabled
-        if next_program_time is None:
+        if next_program_time_utc is None:
             for idx, program in enumerate(self.config['programs']):
                 if program['enabled'] == True:
                     next_program_time = current_time + timedelta(days=1)
-                    next_program_time = next_program_time.replace(hour=program['start_time'].hour,
-                                                                  minute=program['start_time'].minute,
-                                                                  second=0)
+                    next_program_time_utc = next_program_time.replace(hour=program['start_time'].hour,
+                                                                      minute=program['start_time'].minute,
+                                                                      second=0).astimezone(pytz.utc)
                     program_number = idx
                     break
 
-        return next_program_time.astimezone(pytz.utc), program_number
+        return next_program_time_utc, program_number
 
     def _getLastProgramPath(self):
         return os.path.join(self.homevar, 'lastprogram.yml')

@@ -28,3 +28,5 @@
   - Fix 
 - 0.3.0
   - New config class
+- 0.3.1
+  - Fix
