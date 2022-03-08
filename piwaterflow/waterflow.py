@@ -297,10 +297,10 @@ class Waterflow(ManagedClass):
 
         new_next_program_time_utc, _ = self._recalcNextProgram(current_time_utc)
 
-        from tzlocal import get_localzone
-        new_next_program_time_local = new_next_program_time_utc.astimezone(get_localzone())
-
         if new_next_program_time_utc:
+            from tzlocal import get_localzone
+            new_next_program_time_local = new_next_program_time_utc.astimezone(get_localzone())
+
             string_to_log = 'Next program: %s.' % new_next_program_time_local.strftime('%Y-%m-%d %H:%M')
         else:
             string_to_log = 'NO active program!'
