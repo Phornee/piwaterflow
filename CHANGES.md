@@ -30,3 +30,5 @@
   - New config class
 - 0.3.1
   - Fix
+- 0.3.3
+  - Support for new logger
