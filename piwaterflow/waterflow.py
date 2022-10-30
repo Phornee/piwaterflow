@@ -15,7 +15,8 @@ class Waterflow(ManagedClass):
     def __init__(self):
         super().__init__(execpath=__file__)
 
-        self.logger = Logger({'modulename': self.getClassName(), 'logpath': 'log'})
+        self.logger = Logger({'modulename': self.getClassName(), 'logpath': 'log', 'logname': 'waterflow'})
+        self.looplogger = Logger({'modulename': self.getClassName(), 'logpath': 'log', 'logname': 'loop'})
         self.config = WaterflowConfig({'modulename': self.getClassName(), 'execpath': __file__})
 
         try:
@@ -293,7 +294,6 @@ class Waterflow(ManagedClass):
         log = self.logger.getLog()
 
         lines = log.split('\n')
-        last_line = lines[-2]
 
         new_next_program_time_utc, _ = self._recalcNextProgram(current_time_utc)
 
@@ -305,7 +305,8 @@ class Waterflow(ManagedClass):
         else:
             string_to_log = 'NO active program!'
 
-        if last_line[20:] != string_to_log and string_to_log != '':
+        # If previous log empty, or if last line outputs different information... log it. This is to avoid duplicated logs
+        if len(lines) <= 1 or (lines[-2][20:] != string_to_log and string_to_log != ''):
             self.logger.info(string_to_log)
 
     def loop(self):
@@ -315,6 +316,7 @@ class Waterflow(ManagedClass):
                 forced_info = self.getForcedInfo()
 
                 if not self.stopRequested():
+                    self.looplogger.info('Looping...')
                     self._setupGPIO(self.config['valves'])
                     last_program_time = self._readLastProgramTime()
 
@@ -348,15 +350,15 @@ class Waterflow(ManagedClass):
 
                             if program_executed or skip_program or time_threshold_exceeded:
                                 self._writeLastProgramTime(self._timeToStr(current_time_utc))
+                else:
+                    self.looplogger.info('Loop skipped (Stop request).')
+                    self.logger.info('Activity stopped.')
+                    self._emitActionMetric('Stop', True)
+                    self.stopRemove()
 
                 if forced_info:
                     # Remove force token file
                     os.remove(os.path.join(self.getHomevarPath(), 'force'))
-
-                if self.stopRequested():
-                    self.logger.info('Activity stopped.')
-                    self._emitActionMetric('Stop', True)
-                    self.stopRemove()
 
                 # Recalc next program time
                 self._logNextProgramTime(current_time_utc)
