@@ -21,7 +21,8 @@ valves:
 max_valve_time: 10
 humidity_threshold: 90
 influxdbconn:
-  token: ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  org: +++++++++++++
-  bucket: blablabla's Bucket
-  url: https://eu-central-1-1.aws.cloud2.influxdata.com
+  host: xxxxxxx
+  bucket: xxxxxxx
+  user: xxxxxxx
+  password: xxxxxxx
+

@@ -20,7 +20,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
-        "Topic :: Home Automation"
+        "Topic :: Home Automation",
     ],
     install_requires=[
         'baseutils_phornee>=0.0.15',
@@ -28,7 +28,8 @@ setuptools.setup(
         'Flask>=1.1.2',
         'flask-compress>=1.9.0',
         'importlib-metadata>=4.5.0',
-        'tzlocal>=4.1'
+        'tzlocal>=4.1',
+        'influxdb>=5.3.1',
     ],
     python_requires='>=3.6',
 )
