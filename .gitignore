@@ -1,8 +1,4 @@
 /build
 /dist
 /piwaterflow.egg-info
-/makepypi.bat
-piwaterflow/__pycache__/__init__.cpython-38.pyc
-piwaterflow/__pycache__/configwaterflow.cpython-38.pyc
-piwaterflow/__pycache__/waterflow.cpython-38.pyc
-piwaterflow/__pycache__/webservice.cpython-38.pyc
+piwaterflow/__pycache__
