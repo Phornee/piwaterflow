@@ -10,6 +10,7 @@ from influxdb import InfluxDBClient
 
 import json
 
+
 class Waterflow(ManagedClass):
 
     def __init__(self):
@@ -69,7 +70,6 @@ class Waterflow(ManagedClass):
             GPIO.output(valve['pin'], GPIO.LOW)
             pass
 
-
     def _recalcNextProgram(self, last_program_time_utc):
         """
         Calculates which is the next program to be executed
@@ -82,12 +82,12 @@ class Waterflow(ManagedClass):
 
         # Find if next program is today, considering the last program time executed
         for idx, program in enumerate(self.config['programs']):
-            if program['enabled'] == True:
+            if program['enabled'] is True:
                 candidate_time = current_time.replace(hour=program['start_time'].hour,
                                                       minute=program['start_time'].minute,
                                                       second=0)
                 candidate_time_utc = candidate_time.astimezone(pytz.utc)
-                # If this candidate is after the last one executed AND its no more that 10 minutes in the past, choose it
+                # If this candidate is after the last one executed AND its not older than 10 minutes, choose it
                 if candidate_time_utc > last_program_time_utc:
                     next_program_time_utc = candidate_time_utc
                     program_number = idx
@@ -96,7 +96,7 @@ class Waterflow(ManagedClass):
         # If its not today, it could be tomorrow... find the first one enabled
         if next_program_time_utc is None:
             for idx, program in enumerate(self.config['programs']):
-                if program['enabled'] == True:
+                if program['enabled'] is True:
                     next_program_time = current_time + timedelta(days=1)
                     next_program_time_utc = next_program_time.replace(hour=program['start_time'].hour,
                                                                       minute=program['start_time'].minute,
@@ -119,7 +119,7 @@ class Waterflow(ManagedClass):
 
         except Exception as e:
             last_program_time = self._getNowUTC()
-            #last_program_time = datetime.now()
+            # last_program_time = datetime.now()
             with open(last_program_path, 'w') as file:
                 time_str = self._timeToStr(last_program_time)
                 file.writelines([time_str, time_str])
@@ -144,7 +144,7 @@ class Waterflow(ManagedClass):
             modified_time = datetime.fromtimestamp(os.path.getmtime(lock_path))
             if (datetime.utcnow() - modified_time) > timedelta(minutes=20):
                 self.logger.warning('Lock expired: Last loop ended abnormally?.')
-                Path(lock_path).touch() # Previous token expired (previous loop crashed?)... so we will retouch to try again
+                Path(lock_path).touch()  # Previous token expired (previous loop crashed?)... we will retouch to retry
                 return True
         return False
 
@@ -305,14 +305,14 @@ class Waterflow(ManagedClass):
         else:
             string_to_log = 'NO active program!'
 
-        # If previous log empty, or if last line outputs different information... log it. This is to avoid duplicated logs
+        # If previous log empty, or if last line outputs different information... log it. (to avoid duplicated logs)
         if len(lines) <= 1 or (lines[-2][20:] != string_to_log and string_to_log != ''):
             self.logger.info(string_to_log)
 
     def loop(self):
         if self.getLock():  # To ensure a single execution despite of cron overlapping
             try:
-                current_time_utc = self._getNowUTC()
+                curr_time_utc = self._getNowUTC()
                 forced_info = self.getForcedInfo()
 
                 if not self.stopRequested():
@@ -328,28 +328,28 @@ class Waterflow(ManagedClass):
                             # ------------------------
                             self._emitActionMetric('prog{}'.format(forced_value), True)
                             self._executeProgram(forced_value)
-                            self._writeLastProgramTime(self._timeToStr(current_time_utc))
+                            self._writeLastProgramTime(self._timeToStr(curr_time_utc))
                         elif forced_type == "valve":
                             # ------------------------
                             self._emitActionMetric('valve{}'.format(forced_value), True)
                             self._executeValve(forced_value)
                     else:
-                        new_next_program_time_utc, calculated_program_number = self._recalcNextProgram(last_program_time)
-                        if new_next_program_time_utc:
+                        new_next_program_utc, new_program_number = self._recalcNextProgram(last_program_time)
+                        if new_next_program_utc:
                             # ------------------------
-                            time_reached = current_time_utc >= new_next_program_time_utc
-                            time_threshold_exceeded = current_time_utc > (new_next_program_time_utc + timedelta(minutes=10))
+                            time_reached = curr_time_utc >= new_next_program_utc
+                            time_threshold_exceeded = curr_time_utc > (new_next_program_utc + timedelta(minutes=10))
                             skip_program = self._skipProgram()
                             # If we have reached the time of the new_program_time, BUT not by more than 10 minutes...
                             if time_reached and not time_threshold_exceeded and not skip_program:
-                                self._emitActionMetric('prog{}'.format(calculated_program_number), False)
-                                self._executeProgram(calculated_program_number)
+                                self._emitActionMetric('prog{}'.format(new_program_number), False)
+                                self._executeProgram(new_program_number)
                                 program_executed = True
                             else:
                                 program_executed = False
 
                             if program_executed or skip_program or time_threshold_exceeded:
-                                self._writeLastProgramTime(self._timeToStr(current_time_utc))
+                                self._writeLastProgramTime(self._timeToStr(curr_time_utc))
                 else:
                     self.looplogger.info('Loop skipped (Stop request).')
                     self.logger.info('Activity stopped.')
@@ -361,7 +361,7 @@ class Waterflow(ManagedClass):
                     os.remove(os.path.join(self.getHomevarPath(), 'force'))
 
                 # Recalc next program time
-                self._logNextProgramTime(current_time_utc)
+                self._logNextProgramTime(curr_time_utc)
 
                 # Updates "modified" time AT THE END, so that we can keep track about waterflow looping SUCCESFULLY.
                 token_path = os.path.join(self.homevar, 'token')
@@ -374,9 +374,8 @@ class Waterflow(ManagedClass):
                 GPIO.cleanup()
                 self.releaseLock()
 
+
 if __name__ == "__main__":
 
     waterflow_instance = Waterflow()
     waterflow_instance.loop()
-
-

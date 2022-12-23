@@ -2,9 +2,11 @@ import copy
 from baseutils_phornee import Config
 from datetime import datetime
 
+
 def _setTimezoneUTC(date):
     import pytz
     return pytz.timezone('UTC').localize(date)
+
 
 class WaterflowConfig(Config):
 

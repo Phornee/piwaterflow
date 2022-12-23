@@ -5,6 +5,7 @@ from .waterflow import Waterflow
 import json
 from importlib_metadata import version
 
+
 class PiWWWaterflowService:
 
     def __init__(self,  template_folder, static_folder):
@@ -48,8 +49,10 @@ class PiWWWaterflowService:
                             'version': ver
                             }
             # Change to string so that javascript can manage with it
-            responsedict['config']['programs'][0]['start_time'] = responsedict['config']['programs'][0]['start_time'].strftime('%H:%M')
-            responsedict['config']['programs'][1]['start_time'] = responsedict['config']['programs'][1]['start_time'].strftime('%H:%M')
+            starttime_0 = responsedict['config']['programs'][0]['start_time'].strftime('%H:%M')
+            responsedict['config']['programs'][0]['start_time'] = starttime_0
+            starttime_1 = responsedict['config']['programs'][1]['start_time'].strftime('%H:%M')
+            responsedict['config']['programs'][1]['start_time'] = starttime_1
 
             response = jsonify(responsedict)
             response.headers['Pragma'] = 'no-cache'
@@ -114,5 +117,3 @@ class PiWWWaterflowService:
             return redirect(url_for('waterflow'))  # Redirect so that we dont RE-POST same data again when refreshing
 
         return render_template('form.html')
-
-
