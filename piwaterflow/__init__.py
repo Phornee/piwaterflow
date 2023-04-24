@@ -1,3 +1,4 @@
-from .configwaterflow import WaterflowConfig
+""" _init_ """
+from .config_waterflow import WaterflowConfig
 from .waterflow import Waterflow
 from .webservice import PiWWWaterflowService

@@ -1,64 +1,62 @@
-import RPi.GPIO as GPIO
+""" Loop for watering system. It will properly activate watering valves according to the schedulling set
+    in the config file
+"""
 import os
 import time
 from datetime import datetime, timedelta, timezone
-import pytz
 from pathlib import Path
-from baseutils_phornee import ManagedClass, Logger
-from piwaterflow import WaterflowConfig
-from influxdb import InfluxDBClient
-
 import json
+import pytz
+from tzlocal import get_localzone
 
+from RPi import GPIO
+from influxdb_wrapper import influxdb_factory
+from log_mgr import Logger
+from piwaterflow import WaterflowConfig
 
-class Waterflow(ManagedClass):
-
+class Waterflow():
+    """_summary_
+    """
     def __init__(self):
         super().__init__(execpath=__file__)
 
-        self.logger = Logger({'modulename': self.getClassName(), 'logpath': 'log', 'logname': 'waterflow'})
-        self.looplogger = Logger({'modulename': self.getClassName(), 'logpath': 'log', 'logname': 'loop'})
-        self.config = WaterflowConfig({'modulename': self.getClassName(), 'execpath': __file__})
+        self.homevar = os.path.join(str(Path.home()), 'var', self.get_class_name())
 
-        try:
-            host = self.config['influxdbconn']['host']
-            user = self.config['influxdbconn']['user']
-            password = self.config['influxdbconn']['password']
-            bucket = self.config['influxdbconn']['bucket']
-        except Exception as e:
-            self.logger.warning('Error getting connection credentials to InfluxDB.')
-            pass
+        self.logger = Logger(self.get_class_name(), 'waterflow')
+        self.looplogger = Logger(self.get_class_name(), 'loop')
 
-        try:
-            self.conn = InfluxDBClient(host=host, username=user, password=password, database=bucket)
-        except Exception as e:
-            self.logger.warning('Connection to InfluxDB failed: %s.' % host)
-            self.conn = None
-            pass
+        if not template_config_path:
+            template_config_path = os.path.join(Path(__file__).parent.resolve(), './config-template.yml')
+
+        self.config = WaterflowConfig(self.get_class_name(), template_config_path, "config.yml")
+
+        influx_conn_type = self.config['influxdbconn'].get('type', 'influx')
+        self.conn = influxdb_factory(influx_conn_type)
+        self.conn.openConn(self.config['influxdbconn'])
 
     @classmethod
-    def getClassName(cls):
+    def get_class_name(cls):
+        """ class name """
         return "waterflow"
 
-    def updateConfig(self, programs):
+    def update_config(self, programs: dict):
+        """Updates the config file with modified programs
+        Args:
+            programs (dict): New programs to be modified
+        """
         # Update config in mem
         self.config.update({'programs': programs})
 
         # Write back config to disk
         self.config.write()
 
-    def _setTimezoneUTC(self, date):
-        import pytz
-
-        return pytz.timezone('UTC').localize(date)
-
-    def _getNowUTC(self):
+    def _get_now_utc(self):
         return datetime.now(timezone.utc)
 
-    def _timeToStr(self, time_var):
+    def _time_to_str(self, time_var):
         return time_var.strftime('%Y-%m-%d %H:%M:%S\n')
 
-    def _setupGPIO(self, valves):
+    def _setup_gpio(self, valves):
         GPIO.setmode(GPIO.BOARD)
         GPIO.setwarnings(False)
 
@@ -68,9 +66,8 @@ class Waterflow(ManagedClass):
         for valve in valves:
             GPIO.setup(valve['pin'], GPIO.OUT)
             GPIO.output(valve['pin'], GPIO.LOW)
-            pass
 
-    def _recalcNextProgram(self, last_program_time_utc):
+    def _recalc_next_program(self, last_program_time_utc):
         """
         Calculates which is the next program to be executed
         Return: UTC time of next program
@@ -106,31 +103,31 @@ class Waterflow(ManagedClass):
 
         return next_program_time_utc, program_number
 
-    def _getLastProgramPath(self):
+    def _get_last_program_path(self):
         return os.path.join(self.homevar, 'lastprogram.yml')
 
-    def _readLastProgramTime(self):
-        last_program_path = self._getLastProgramPath()
+    def _read_last_program_time(self):
+        last_program_path = self._get_last_program_path()
 
         try:
-            with open(last_program_path, 'r') as file:
+            with open(last_program_path, 'r', encoding="utf-8") as file:
                 data = file.readlines()
                 last_program_time = datetime.strptime(data[0][:-1], '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
 
-        except Exception as e:
-            last_program_time = self._getNowUTC()
+        except Exception:
+            last_program_time = self._get_now_utc()
             # last_program_time = datetime.now()
-            with open(last_program_path, 'w') as file:
-                time_str = self._timeToStr(last_program_time)
+            with open(last_program_path, 'w', encoding="utf-8") as file:
+                time_str = self._time_to_str(last_program_time)
                 file.writelines([time_str, time_str])
         return last_program_time
 
-    def _writeLastProgramTime(self, timelist):
-        last_program_path = self._getLastProgramPath()
-        with open(last_program_path, 'w') as file:
+    def _write_last_program_time(self, timelist):
+        last_program_path = self._get_last_program_path()
+        with open(last_program_path, 'w', encoding="utf-8") as file:
             file.writelines(timelist)
 
-    def getLock(self):
+    def get_lock(self):
         """
         This is to ensure that only one execution will run from cron at the same time
         Use file as a lock... not using DB locks because we want to maximize resiliency
@@ -138,7 +135,7 @@ class Waterflow(ManagedClass):
         lock_path = os.path.join(self.homevar, 'lock')
 
         if not os.path.exists(lock_path):
-            with open(lock_path, 'w'):
+            with open(lock_path, 'w', encoding="utf-8"):
                 return True
         else:
             modified_time = datetime.fromtimestamp(os.path.getmtime(lock_path))
@@ -148,89 +145,83 @@ class Waterflow(ManagedClass):
                 return True
         return False
 
-    def releaseLock(self):
+    def release_lock(self):
+        """Lock the loop... so the 2 loops cannot happen at the same time
+        """
         lock_path = os.path.join(self.homevar, 'lock')
 
         if os.path.exists(lock_path):
             os.remove(lock_path)
         else:
-            self.logger.error(f"Could not release lock.")
+            self.logger.error("Could not release lock.")
 
-    def isLoopingCorrectly(self):
-        return (datetime.utcnow() - self.getLastLoopTime()) < timedelta(minutes=10)
+    def is_looping_correctly(self):
+        return (datetime.utcnow() - self.get_last_loop_time()) < timedelta(minutes=10)
 
-    def getLastLoopTime(self):
-        tokenpath = os.path.join(self.getHomevarPath(), 'token')
+    def get_last_loop_time(self):
+        tokenpath = os.path.join(self.homevar, 'token')
 
-        modTimesinceEpoc = os.path.getmtime(tokenpath)
-        modificationTime = datetime.utcfromtimestamp(modTimesinceEpoc)
+        mod_time_since_epoc = os.path.getmtime(tokenpath)
+        modification_time = datetime.utcfromtimestamp(mod_time_since_epoc)
 
-        return modificationTime
+        return modification_time
 
     def force(self, type_force, value):
-        config = self.config.getDict()
+        config = self.config.get_dict()
         if (type_force == 'program' and 0 <= value < len(config['programs'])) or \
            (type_force == 'valve' and 0 <= value < len(config['valves'])):
-            force_file_path = os.path.join(self.getHomevarPath(), 'force')
-            with open(force_file_path, 'w') as force_file:
-                force_file.write('{{"type":"{0}","value":{1}}}'.format(type_force, value))
+            force_file_path = os.path.join(self.homevar, 'force')
+            with open(force_file_path, 'w', encoding="utf-8") as force_file:
+                force_file.write(f'{{"type":"{type_force}","value":{value}}}')
                 return True
         else:
             return False
 
     def stop(self):
-        stop_req_path = os.path.join(self.getHomevarPath(), 'stop')
+        stop_req_path = os.path.join(self.homevar, 'stop')
         Path(stop_req_path).touch()
         return True
 
-    def stopRequested(self):
-        stop_req_path = os.path.join(self.getHomevarPath(), 'stop')
+    def stop_requested(self):
+        stop_req_path = os.path.join(self.homevar, 'stop')
         return os.path.exists(stop_req_path)
 
-    def stopRemove(self):
-        stop_req_path = os.path.join(self.getHomevarPath(), 'stop')
+    def stop_remove(self):
+        stop_req_path = os.path.join(self.homevar, 'stop')
         return os.remove(stop_req_path)
 
-    def getForcedInfo(self):
-        force_file_path = os.path.join(self.getHomevarPath(), 'force')
+    def get_forced_info(self):
+        force_file_path = os.path.join(self.homevar, 'force')
         if os.path.exists(force_file_path):
-            with open(force_file_path, 'r') as force_file:
+            with open(force_file_path, 'r', encoding="utf-8") as force_file:
                 data = json.load(force_file)
                 return data
         else:
             return None
 
-    def getLog(self):
-        return self.logger.getLog()
+    def get_log(self):
+        return self.logger.get_log()
 
     def _sleep(self, time_sleep):
         """
         Sleep "time_sleep" time, but checks every 5 seconds if a stop has been requested
         """
         time_count = 0
-        while not self.stopRequested() and time_count < time_sleep:
+        while not self.stop_requested() and time_count < time_sleep:
             time_count = time_count + 5
             time.sleep(5)  # Every X seconds
 
-    def _emitActionMetric(self, action, forced):
-        if self.config['metrics']:
-            if self.conn:
-                json_body = [
-                    {
-                        "measurement": "piwaterflow",
-                        "tags": {
-                            "action": action,
-                            "forced": forced
-                        },
-                        "time": datetime.utcnow(),
-                        "fields": {
-                            "fake": 0
-                        }
-                    }
-                ]
-                self.conn.write_points(json_body)
+    def _emit_action_metric(self, action, forced):
+        if self.config['metrics'] and self.conn:
+            action_body = [
+                {
+                    "tags": {"action": action, "forced": forced},
+                    "fields": {"fake": 0}
+                }
+            ]
+            self.conn.insert("piwaterflow", action_body)
 
-    def _executeValve(self, valve):
+    def _execute_valve(self, valve):
         # ------------------------------------
         # inverter_enable =  not GPIO.input(self.config['external_ac_signal_pin'])
         # if inverter_enable: # If we dont have external 220V power input, then activate inverter
@@ -238,17 +229,17 @@ class Waterflow(ManagedClass):
         self.logger.info('Inverter relay ON.')
         valve_pin = self.config['valves'][valve]['pin']
         GPIO.output(valve_pin, GPIO.HIGH)
-        self.logger.info('Valve %s ON.' % valve)
+        self.logger.info(f'Valve {valve} ON.')
 
         self._sleep(self.config['max_valve_time']*60)
 
         GPIO.output(valve_pin, GPIO.LOW)
-        self.logger.info('Valve %s OFF.' % valve)
+        self.logger.info('Valve {valve} OFF.')
         # if inverter_enable: # If we dont have external 220V power input, then activate inverter
         GPIO.output(self.config['inverter_relay_pin'], GPIO.LOW)  # INVERTER always OFF after operations
         self.logger.info('Inverter relay OFF.')
 
-    def _skipProgram(self):
+    def _skip_program(self):
         # print(self.config['humidity_threshold'])
         # if self.is_raspberry_pi():
         #     import adafruit_dht
@@ -264,44 +255,43 @@ class Waterflow(ManagedClass):
         #    return False
         return False
 
-    def _executeProgram(self, program_number):
+    def _execute_program(self, program_number):
         """
         Works for regular programs, or forced ones (if program number is sent)
         """
-        self.logger.info('Executing program %s.' % program_number)
+        self.logger.info(f'Executing program {program_number}.')
         # inverter_enable =  not GPIO.input(self.config['external_ac_signal_pin'])
         # if inverter_enable: # If we don't have external 220V power input, then activate inverter
         GPIO.output(self.config['inverter_relay_pin'], GPIO.HIGH)
         self.logger.info('Inverter relay ON.')
         for idx, valve_time in enumerate(self.config['programs'][program_number]['valves_times']):
-            if valve_time > 0 and not self.stopRequested():
+            if valve_time > 0 and not self.stop_requested():
                 valve_pin = self.config['valves'][idx]['pin']
                 GPIO.output(valve_pin, GPIO.HIGH)
-                self.logger.info('Valve %s ON.' % idx)
+                self.logger.info(f'Valve {idx} ON.')
 
                 self._sleep(valve_time * 60)
 
                 GPIO.output(valve_pin, GPIO.LOW)
-                self.logger.info('Valve %s OFF.' % idx)
+                self.logger.info(f'Valve {idx} OFF.')
             else:
-                self.logger.info('Valve %s Skipped.' % idx)
+                self.logger.info(f'Valve {idx} Skipped.')
         # if inverter_enable: # If we dont have external 220V power input, then activate inverter
         GPIO.output(self.config['inverter_relay_pin'], GPIO.LOW)  # INVERTER always OFF after operations
         self.logger.info('Inverter relay OFF.')
 
-    def _logNextProgramTime(self, current_time_utc):
+    def _log_next_program_time(self, current_time_utc):
 
-        log = self.logger.getLog()
+        log = self.logger.get_log()
 
         lines = log.split('\n')
 
-        new_next_program_time_utc, _ = self._recalcNextProgram(current_time_utc)
+        new_next_program_time_utc, _ = self._recalc_next_program(current_time_utc)
 
         if new_next_program_time_utc:
-            from tzlocal import get_localzone
             new_next_program_time_local = new_next_program_time_utc.astimezone(get_localzone())
 
-            string_to_log = 'Next program: %s.' % new_next_program_time_local.strftime('%Y-%m-%d %H:%M')
+            string_to_log = f"Next program: {new_next_program_time_local.strftime('%Y-%m-%d %H:%M')}."
         else:
             string_to_log = 'NO active program!'
 
@@ -309,70 +299,78 @@ class Waterflow(ManagedClass):
         if len(lines) <= 1 or (lines[-2][20:] != string_to_log and string_to_log != ''):
             self.logger.info(string_to_log)
 
-    def loop(self):
-        if self.getLock():  # To ensure a single execution despite of cron overlapping
-            try:
-                curr_time_utc = self._getNowUTC()
-                forced_info = self.getForcedInfo()
+    def _execute_forced(self, forced_info: dict, curr_time_utc):
+        forced_type = forced_info.get("type")
+        forced_value = forced_info.get("value")
+        if forced_type == "program":
+            self.logger.info(f'Forced program {forced_value} executing now.')
+            # ------------------------
+            self._emit_action_metric(f'prog{forced_value}', True)
+            self._execute_program(forced_value)
+            self._write_last_program_time(self._time_to_str(curr_time_utc))
+        elif forced_type == "valve":
+            # ------------------------
+            self._emit_action_metric('valve{forced_value}', True)
+            self._execute_valve(forced_value)
 
-                if not self.stopRequested():
+    def _check_and_execute_program(self, curr_time_utc):
+        last_program_time = self._read_last_program_time()
+        new_next_program_utc, new_program_number = self._recalc_next_program(last_program_time)
+        if new_next_program_utc:
+            # ------------------------
+            time_reached = curr_time_utc >= new_next_program_utc
+            time_threshold_exceeded = curr_time_utc > (new_next_program_utc + timedelta(minutes=10))
+            skip_program = self._skip_program()
+            # If we have reached the time of the new_program_time, BUT not by more than 10 minutes...
+            if time_reached and not time_threshold_exceeded and not skip_program:
+                self._emit_action_metric(f'prog{new_program_number}', False)
+                self._execute_program(new_program_number)
+                program_executed = True
+            else:
+                program_executed = False
+
+            if program_executed or skip_program or time_threshold_exceeded:
+                self._write_last_program_time(self._time_to_str(curr_time_utc))
+
+    def loop(self):
+        """ Loop executed every x minutes... in crontab for example.
+        """
+        if self.get_lock():  # To ensure a single execution despite of cron overlapping
+            try:
+                curr_time_utc = self._get_now_utc()
+                forced_info = self.get_forced_info()
+
+                if not self.stop_requested():
                     self.looplogger.info('Looping...')
-                    self._setupGPIO(self.config['valves'])
-                    last_program_time = self._readLastProgramTime()
+                    self._setup_gpio(self.config['valves'])
 
                     if forced_info:
-                        forced_type = forced_info.get("type")
-                        forced_value = forced_info.get("value")
-                        if forced_type == "program":
-                            self.logger.info('Forced program {} executing now.'.format(forced_value))
-                            # ------------------------
-                            self._emitActionMetric('prog{}'.format(forced_value), True)
-                            self._executeProgram(forced_value)
-                            self._writeLastProgramTime(self._timeToStr(curr_time_utc))
-                        elif forced_type == "valve":
-                            # ------------------------
-                            self._emitActionMetric('valve{}'.format(forced_value), True)
-                            self._executeValve(forced_value)
+                        self._execute_forced(forced_info, curr_time_utc)
                     else:
-                        new_next_program_utc, new_program_number = self._recalcNextProgram(last_program_time)
-                        if new_next_program_utc:
-                            # ------------------------
-                            time_reached = curr_time_utc >= new_next_program_utc
-                            time_threshold_exceeded = curr_time_utc > (new_next_program_utc + timedelta(minutes=10))
-                            skip_program = self._skipProgram()
-                            # If we have reached the time of the new_program_time, BUT not by more than 10 minutes...
-                            if time_reached and not time_threshold_exceeded and not skip_program:
-                                self._emitActionMetric('prog{}'.format(new_program_number), False)
-                                self._executeProgram(new_program_number)
-                                program_executed = True
-                            else:
-                                program_executed = False
-
-                            if program_executed or skip_program or time_threshold_exceeded:
-                                self._writeLastProgramTime(self._timeToStr(curr_time_utc))
+                        self._check_and_execute_program(curr_time_utc)
                 else:
                     self.looplogger.info('Loop skipped (Stop request).')
                     self.logger.info('Activity stopped.')
-                    self._emitActionMetric('Stop', True)
-                    self.stopRemove()
+                    self._emit_action_metric('Stop', True)
+                    self.stop_remove()
 
                 if forced_info:
                     # Remove force token file
-                    os.remove(os.path.join(self.getHomevarPath(), 'force'))
+                    os.remove(os.path.join(self.homevar, 'force'))
 
                 # Recalc next program time
-                self._logNextProgramTime(curr_time_utc)
+                self._log_next_program_time(curr_time_utc)
 
                 # Updates "modified" time AT THE END, so that we can keep track about waterflow looping SUCCESFULLY.
                 token_path = os.path.join(self.homevar, 'token')
                 Path(token_path).touch()
 
-            except Exception as e:
-                self.logger.error("Exception looping: {}".format(str(e)))
+            except Exception as ex:
+                self.logger.error(f'Exception looping: {str(ex)}')
                 raise
             finally:
                 GPIO.cleanup()
-                self.releaseLock()
+                self.release_lock()
 
 
 if __name__ == "__main__":

@@ -16,7 +16,7 @@ class PiWWWaterflowService:
         self.app.add_url_rule('/force', 'force', self.force, methods=['GET', 'POST'])
         self.app.add_url_rule('/stop', 'stop', self.stop, methods=['GET', 'POST'])
         self.app.add_url_rule('/config', 'config', self.config, methods=['GET'])
-        self.app.add_url_rule('/waterflow', 'waterflow', self.waterflow, methods=['GET', 'POST'])
+        self.app.add_url_rule('/waterflow', 'waterflow', self.waterflow_endpoint, methods=['GET', 'POST'])
         Compress(self.app)
         self.waterflow = Waterflow()
 
@@ -29,8 +29,8 @@ class PiWWWaterflowService:
     def index(self):
         return 'This is the Pi server.'
 
-    def _getPublicConfig(self):
-        config = self.waterflow.config.getDictCopy()
+    def _get_public_config(self):
+        config = self.waterflow.config.get_dict_copy()
         del config['influxdbconn']
         return config
 
@@ -41,11 +41,11 @@ class PiWWWaterflowService:
             except Exception:
                 ver = '?.?.?'
 
-            responsedict = {'log': self.waterflow.getLog(),
-                            'forced': self.waterflow.getForcedInfo(),
-                            'stop': self.waterflow.stopRequested(),
-                            'config': self._getPublicConfig(),
-                            'lastlooptime': self.waterflow.getLastLoopTime().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
+            responsedict = {'log': self.waterflow.get_log(),
+                            'forced': self.waterflow.get_forced_info(),
+                            'stop': self.waterflow.stop_requested(),
+                            'config': self._get_public_config(),
+                            'lastlooptime': self.waterflow.get_last_loop_time().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
                             'version': ver
                             }
             # Change to string so that javascript can manage with it
@@ -62,7 +62,7 @@ class PiWWWaterflowService:
 
     # log
     def log(self):
-        log_string = self.waterflow.getLog()
+        log_string = self.waterflow.get_log()
 
         response = make_response(log_string)
         response.headers["content-type"] = "text/plain"
@@ -76,12 +76,12 @@ class PiWWWaterflowService:
             self.waterflow.force(type_force, int(value_force))
             return redirect(url_for('waterflow'))
         elif request.method == 'GET':
-            forced_data = self.waterflow.getForcedInfo()
+            forced_data = self.waterflow.get_forced_info()
             return json.dumps(forced_data)
 
     def stop(self):
         if request.method == 'GET':
-            stop_requested = self.waterflow.stopRequested()
+            stop_requested = self.waterflow.stop_requested()
             return "true" if stop_requested else "false"
         else:
             stop_requested = self.waterflow.stop()
@@ -89,7 +89,7 @@ class PiWWWaterflowService:
 
     def config(self):
         if request.method == 'GET':
-            parsed_config = self._getPublicConfig()
+            parsed_config = self._get_public_config()
             # API should only expose non-secret parameters. Lets remove secrets
             response = make_response(parsed_config)
             response.headers["content-type"] = "text/plain"
@@ -106,13 +106,17 @@ class PiWWWaterflowService:
         enabled1_checkbox_value = request.form.get(form_enabled_name)
         program['enabled'] = enabled1_checkbox_value is not None
 
-    def waterflow(self):
-        parsed_config = self.waterflow.config.getDictCopy()
+    def waterflow_endpoint(self):
+        """Returns the main html form for piwwwaterflow
+        Returns:
+           Response: Returns the main html form for piwwwaterflow
+        """
+        parsed_config = self.waterflow.config.get_dict_copy()
         if request.method == 'POST':  # this block is only entered when the form is submitted
             self._changeProgram(parsed_config['programs'][0], 'time1', 'valve11', 'valve12', 'prog1enabled')
             self._changeProgram(parsed_config['programs'][1], 'time2', 'valve21', 'valve22', 'prog2enabled')
 
-            self.waterflow.updateConfig(programs=parsed_config['programs'])
+            self.waterflow.update_config(programs=parsed_config['programs'])
 
             return redirect(url_for('waterflow'))  # Redirect so that we dont RE-POST same data again when refreshing
 
