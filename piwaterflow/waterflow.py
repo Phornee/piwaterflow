@@ -113,7 +113,6 @@ class Waterflow():
             with open(last_program_path, 'r', encoding="utf-8") as file:
                 data = file.readlines()
                 last_program_time = datetime.strptime(data[0][:-1], '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
-
         except Exception:
             last_program_time = self._get_now_utc()
             # last_program_time = datetime.now()
@@ -125,14 +124,14 @@ class Waterflow():
     def _write_last_program_time(self, timelist):
         last_program_path = self._get_last_program_path()
         with open(last_program_path, 'w', encoding="utf-8") as file:
-            file.writelines(timelist)
+            file.writelines(time_utc_last)
 
     def get_lock(self):
         """
         This is to ensure that only one execution will run from cron at the same time
         Use file as a lock... not using DB locks because we want to maximize resiliency
         """
-        lock_path = os.path.join(self.homevar, 'lock')
+        lock_path = self._getHomePath('lock')
 
         if not os.path.exists(lock_path):
             with open(lock_path, 'w', encoding="utf-8"):
@@ -140,7 +139,7 @@ class Waterflow():
         else:
             modified_time = datetime.fromtimestamp(os.path.getmtime(lock_path))
             if (datetime.utcnow() - modified_time) > timedelta(minutes=20):
-                self.logger.warning('Lock expired: Last loop ended abnormally?.')
+                self.userlogger.warning('Lock expired: Last loop ended abnormally?.')
                 Path(lock_path).touch()  # Previous token expired (previous loop crashed?)... we will retouch to retry
                 return True
         return False
@@ -148,12 +147,12 @@ class Waterflow():
     def release_lock(self):
         """Lock the loop... so the 2 loops cannot happen at the same time
         """
-        lock_path = os.path.join(self.homevar, 'lock')
+        lock_path = self._getHomePath('lock')
 
         if os.path.exists(lock_path):
             os.remove(lock_path)
         else:
-            self.logger.error("Could not release lock.")
+            self.userlogger.error(f"Could not release lock.")
 
     def is_looping_correctly(self):
         return (datetime.utcnow() - self.get_last_loop_time()) < timedelta(minutes=10)
@@ -226,7 +225,7 @@ class Waterflow():
         # inverter_enable =  not GPIO.input(self.config['external_ac_signal_pin'])
         # if inverter_enable: # If we dont have external 220V power input, then activate inverter
         GPIO.output(self.config['inverter_relay_pin'], GPIO.HIGH)
-        self.logger.info('Inverter relay ON.')
+        self.userlogger.info('Inverter relay ON.')
         valve_pin = self.config['valves'][valve]['pin']
         GPIO.output(valve_pin, GPIO.HIGH)
         self.logger.info(f'Valve {valve} ON.')
@@ -234,10 +233,10 @@ class Waterflow():
         self._sleep(self.config['max_valve_time']*60)
 
         GPIO.output(valve_pin, GPIO.LOW)
-        self.logger.info('Valve {valve} OFF.')
+        self.logger.info(f'Valve {valve} OFF.')
         # if inverter_enable: # If we dont have external 220V power input, then activate inverter
         GPIO.output(self.config['inverter_relay_pin'], GPIO.LOW)  # INVERTER always OFF after operations
-        self.logger.info('Inverter relay OFF.')
+        self.userlogger.info('Inverter relay OFF.')
 
     def _skip_program(self):
         # print(self.config['humidity_threshold'])
@@ -263,7 +262,7 @@ class Waterflow():
         # inverter_enable =  not GPIO.input(self.config['external_ac_signal_pin'])
         # if inverter_enable: # If we don't have external 220V power input, then activate inverter
         GPIO.output(self.config['inverter_relay_pin'], GPIO.HIGH)
-        self.logger.info('Inverter relay ON.')
+        self.userlogger.info('Inverter relay ON.')
         for idx, valve_time in enumerate(self.config['programs'][program_number]['valves_times']):
             if valve_time > 0 and not self.stop_requested():
                 valve_pin = self.config['valves'][idx]['pin']
@@ -278,7 +277,7 @@ class Waterflow():
                 self.logger.info(f'Valve {idx} Skipped.')
         # if inverter_enable: # If we dont have external 220V power input, then activate inverter
         GPIO.output(self.config['inverter_relay_pin'], GPIO.LOW)  # INVERTER always OFF after operations
-        self.logger.info('Inverter relay OFF.')
+        self.userlogger.info('Inverter relay OFF.')
 
     def _log_next_program_time(self, current_time_utc):
 
@@ -297,7 +296,7 @@ class Waterflow():
 
         # If previous log empty, or if last line outputs different information... log it. (to avoid duplicated logs)
         if len(lines) <= 1 or (lines[-2][20:] != string_to_log and string_to_log != ''):
-            self.logger.info(string_to_log)
+            self.userlogger.info(string_to_log)
 
     def _execute_forced(self, forced_info: dict, curr_time_utc):
         forced_type = forced_info.get("type")
@@ -341,7 +340,7 @@ class Waterflow():
                 forced_info = self.get_forced_info()
 
                 if not self.stop_requested():
-                    self.looplogger.info('Looping...')
+                    self.debuglogger.info('Looping...')
                     self._setup_gpio(self.config['valves'])
 
                     if forced_info:
@@ -349,8 +348,8 @@ class Waterflow():
                     else:
                         self._check_and_execute_program(curr_time_utc)
                 else:
-                    self.looplogger.info('Loop skipped (Stop request).')
-                    self.logger.info('Activity stopped.')
+                    self.debuglogger.info('Loop skipped (Stop request).')
+                    self.userlogger.info('Activity stopped.')
                     self._emit_action_metric('Stop', True)
                     self.stop_remove()
 
@@ -362,7 +361,7 @@ class Waterflow():
                 self._log_next_program_time(curr_time_utc)
 
                 # Updates "modified" time AT THE END, so that we can keep track about waterflow looping SUCCESFULLY.
-                token_path = os.path.join(self.homevar, 'token')
+                token_path = self._getHomePath('token')
                 Path(token_path).touch()
 
             except Exception as ex:
@@ -373,7 +372,3 @@ class Waterflow():
                 self.release_lock()
 
 
-if __name__ == "__main__":
-
-    waterflow_instance = Waterflow()
-    waterflow_instance.loop()
