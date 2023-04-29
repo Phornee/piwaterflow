@@ -5,22 +5,24 @@ influxdbconn:
   host: pi02
   bucket: hometelemetry
   user: writer
-  password: 24$Qw7LVRjOI
+  password: xxxxxxx
 inverter_relay_pin: 31
 logpath: log
 loop_freq: 1
 max_valve_time: 10
 programs:
-- enabled: true
-  start_time: '09:51:00'
-  valves_times:
-  - 1
-  - 2
-- enabled: false
-  start_time: '19:43:00'
-  valves_times:
-  - 1
-  - 7
+  first:
+    enabled: true
+    start_time: '09:51'
+    valves_times:
+        valve1: 1
+        valve2: 2
+  second:
+    enabled: true
+    start_time: '19:04'
+    valves_times:
+        valve1: 1
+        valve2: 7
 valves:
 - name: main
   pin: 33
