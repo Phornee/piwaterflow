@@ -9,7 +9,11 @@ from datetime import datetime, timedelta
 from pathlib import Path
 import json
 
-from RPi import GPIO
+try:
+    from RPi import GPIO
+except ModuleNotFoundError:
+    from fake_rpi.RPi import GPIO
+
 from influxdb_wrapper import influxdb_factory
 from log_mgr import Logger
 from .config_waterflow import WaterflowConfig
