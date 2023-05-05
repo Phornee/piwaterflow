@@ -23,7 +23,7 @@ setuptools.setup(
         "Topic :: Home Automation",
     ],
     install_requires=[
-        'log_mgr>=0.0.1',
+        'log_mgr>=0.0.2',
         'config_yml>=0.2.2',
         'RPi.GPIO>=0.7.0',
         'fake-rpi>=0.7.1',
