@@ -11,7 +11,9 @@ import json
 
 try:
     from RPi import GPIO
-except ModuleNotFoundError:
+except ModuleNotFoundError as ex:
+    from fake_rpi.RPi import GPIO
+except ImportError as ex:
     from fake_rpi.RPi import GPIO
 
 from influxdb_wrapper import influxdb_factory
