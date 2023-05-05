@@ -23,6 +23,7 @@ valves:
 max_valve_time: 10
 humidity_threshold: 90
 metrics: false
+max_loop_time: 20
 influxdbconn:
   host: xxxxxxx
   bucket: xxxxxxx
