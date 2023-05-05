@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="piwaterflow",
-    version="0.3.3",
+    version="0.5.1",
     author="Ismael Raya",
     author_email="phornee@gmail.com",
     description="Raspberry Pi Waterflow resilient system",
@@ -23,13 +23,10 @@ setuptools.setup(
         "Topic :: Home Automation",
     ],
     install_requires=[
-        'baseutils_phornee>=0.0.17',
+        'log_mgr>=0.0.1',
+        'config_yml>=0.2.3',
         'RPi.GPIO>=0.7.0',
-        'Flask>=1.1.2',
-        'flask-compress>=1.9.0',
-        'importlib-metadata>=4.5.0',
-        'tzlocal>=4.1',
-        'influxdb>=5.3.1',
+        'influxdb_wrapper>=0.0.3'
     ],
     python_requires='>=3.6',
 )

@@ -9,7 +9,7 @@ It's intended to be executed periodically (i.e. cron every 5 minutes).
   - Programs can be forced at any time.
 - Valves can be manually triggered.
 - Programs, forced programs and manual Valves can be manually stopped.
-- Metrics can be emitted to influxdb, mongodb or mariaDB to register actions (programs and valves).
+- Metrics can be emitted to influxdb to register actions (programs and valves).
 - This package fits with piwwwaterflow, so that it can be controlled via HTTP page.
 
 TODO:

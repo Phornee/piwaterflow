@@ -1,0 +1,30 @@
+external_ac_signal_pin: 10
+humidity_threshold: 90
+influxdbconn:
+  type: mock
+  host: pi02
+  bucket: hometelemetry
+  user: writer
+  password: xxxxxxx
+inverter_relay_pin: 31
+logpath: log
+loop_freq: 1
+max_valve_time: 10
+programs:
+  first:
+    enabled: true
+    start_time: '09:51'
+    valves_times:
+        valve1: 1
+        valve2: 2
+  second:
+    enabled: true
+    start_time: '19:04'
+    valves_times:
+        valve1: 1
+        valve2: 7
+valves:
+- name: main
+  pin: 33
+- name: grass
+  pin: 35
