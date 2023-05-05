@@ -15,6 +15,8 @@ except ModuleNotFoundError as ex:
     from fake_rpi.RPi import GPIO
 except ImportError as ex:
     from fake_rpi.RPi import GPIO
+except RuntimeError as ex:
+    from fake_rpi.RPi import GPIO
 
 from influxdb_wrapper import influxdb_factory
 from log_mgr import Logger
