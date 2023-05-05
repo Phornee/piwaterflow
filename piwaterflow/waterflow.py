@@ -8,7 +8,6 @@ import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
 import json
-from tzlocal import get_localzone
 
 from RPi import GPIO
 from influxdb_wrapper import influxdb_factory
@@ -130,7 +129,7 @@ class Waterflow():
         if today:
             current_time = today.astimezone() # Make aware
         else:
-            current_time = datetime.now().replace(microsecond=0)
+            current_time = datetime.now().astimezone().replace(microsecond=0)
 
         # Transform into a list to sort them
         prog_list = []
@@ -387,8 +386,6 @@ class Waterflow():
         new_next_program_time, _ = self._recalc_next_program(current_time)
 
         if new_next_program_time:
-            new_next_program_time = new_next_program_time.astimezone(get_localzone())
-
             string_to_log = f"Next program: {self.time_to_str(new_next_program_time)}."
         else:
             string_to_log = 'NO active program!'
