@@ -13,10 +13,16 @@ try:
     from RPi import GPIO
 except ModuleNotFoundError as ex:
     from fake_rpi.RPi import GPIO
+    from fake_rpi import toggle_print
+    toggle_print(False)
 except ImportError as ex:
     from fake_rpi.RPi import GPIO
+    from fake_rpi import toggle_print
+    toggle_print(False)
 except RuntimeError as ex:
     from fake_rpi.RPi import GPIO
+    from fake_rpi import toggle_print
+    toggle_print(False)
 
 from influxdb_wrapper import influxdb_factory
 from log_mgr import Logger
