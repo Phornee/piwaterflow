@@ -11,15 +11,7 @@ import json
 
 try:
     from RPi import GPIO
-except ModuleNotFoundError as ex:
-    from fake_rpi.RPi import GPIO
-    from fake_rpi import toggle_print
-    toggle_print(False)
-except ImportError as ex:
-    from fake_rpi.RPi import GPIO
-    from fake_rpi import toggle_print
-    toggle_print(False)
-except RuntimeError as ex:
+except (ModuleNotFoundError, ImportError, RuntimeError):
     from fake_rpi.RPi import GPIO
     from fake_rpi import toggle_print
     toggle_print(False)
@@ -39,6 +31,11 @@ class Waterflow():
         the waterflow system.
     """
     def __init__(self, template_config_path: str = None, dry_run: bool = False):
+        """__init__ of the function
+        Args:
+            template_config_path (str, optional): Template config to use. Defaults to None.
+            dry_run (bool, optional): If true, it will just simulate, and wont make any change. Defaults to False.
+        """
         self.homevar = os.path.join(str(Path.home()), 'var', self.class_name())
 
         if dry_run:
@@ -48,8 +45,10 @@ class Waterflow():
                 shutil.rmtree(self.homevar)
             if not os.path.exists(self.homevar):
                 os.makedirs(self.homevar)
+            dry_run_abs_path = ""
         else:
             self.dry_run = False
+            dry_run_abs_path = None
 
         self.debuglogger = Logger(self.class_name(), 'waterflow', dry_run=dry_run)
         self.userlogger = Logger(self.class_name(), 'loop', dry_run=dry_run)
@@ -57,15 +56,10 @@ class Waterflow():
         if not template_config_path:
             template_config_path = os.path.join(Path(__file__).parent.resolve(), './config-template.yml')
 
-        if dry_run:
-            self.config = WaterflowConfig(package_name=self.class_name(),
-                                          template_path=template_config_path,
-                                          config_file_name="config.yml",
-                                          dry_run_abs_path="")
-        else:
-            self.config = WaterflowConfig(package_name=self.class_name(),
-                                          template_path=template_config_path,
-                                          config_file_name="config.yml")
+        self.config = WaterflowConfig(package_name=self.class_name(),
+                                        template_path=template_config_path,
+                                        config_file_name="config.yml",
+                                        dry_run_abs_path=dry_run_abs_path)
 
         influx_conn_type = self.config['influxdbconn'].get('type', 'influx')
         self.conn = influxdb_factory(influx_conn_type)
@@ -241,8 +235,12 @@ class Waterflow():
         Returns:
            datetime: Time in which last loop was executed
         """
-        mod_time_since_epoc = os.path.getmtime(self._get_homevar_path('token'))
-        modification_time = datetime.fromtimestamp(mod_time_since_epoc).astimezone()
+        token_path = self._get_homevar_path('token')
+        if os.path.exists(token_path):
+            mod_time_since_epoc = os.path.getmtime(token_path)
+            modification_time = datetime.fromtimestamp(mod_time_since_epoc).astimezone()
+        else:
+            modification_time = datetime.fromtimestamp(0) # Loop never run ok. Return oldest possible date
 
         return modification_time
 
@@ -483,7 +481,7 @@ class Waterflow():
             except Exception as ex:
                 self.debuglogger.error(f'Exception looping: {str(ex)}')
                 self.userlogger.error(f'Exception looping: {str(ex)}')
-                raise Exception(ex) from ex
+                raise RuntimeError(ex) from ex
             finally:
                 GPIO.cleanup()
                 self.release_lock()
