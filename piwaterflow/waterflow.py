@@ -12,9 +12,7 @@ import json
 try:
     from RPi import GPIO
 except (ModuleNotFoundError, ImportError, RuntimeError):
-    from fake_rpi.RPi import GPIO
-    from fake_rpi import toggle_print
-    toggle_print(False)
+    from fake_rpigpio.RPi import GPIO
 
 from influxdb_wrapper import influxdb_factory
 from log_mgr import Logger
