@@ -35,18 +35,15 @@ class Waterflow():
             dry_run (bool, optional): If true, it will just simulate, and wont make any change. Defaults to False.
         """
         self.homevar = os.path.join(str(Path.home()), 'var', self.class_name())
+        
+        self.dry_run = dry_run
 
         if dry_run:
-            self.dry_run = True
             self.homevar = os.path.join(self.homevar, 'dryrun')
             if os.path.exists(self.homevar): # Only one instance of waterflow can run at a time, so this is safe
                 shutil.rmtree(self.homevar)
             if not os.path.exists(self.homevar):
                 os.makedirs(self.homevar)
-            dry_run_abs_path = ""
-        else:
-            self.dry_run = False
-            dry_run_abs_path = None
 
         self.debuglogger = Logger(self.class_name(), 'waterflow', dry_run=dry_run)
         self.userlogger = Logger(self.class_name(), 'loop', dry_run=dry_run)
@@ -55,9 +52,9 @@ class Waterflow():
             template_config_path = os.path.join(Path(__file__).parent.resolve(), './config-template.yml')
 
         self.config = WaterflowConfig(package_name=self.class_name(),
-                                        template_path=template_config_path,
-                                        config_file_name="config.yml",
-                                        dry_run_abs_path=dry_run_abs_path)
+                                      template_path=template_config_path,
+                                      config_file_name="config.yml",
+                                      dry_run=dry_run)
 
         influx_conn_type = self.config['influxdbconn'].get('type', 'influx')
         self.conn = influxdb_factory(influx_conn_type)
