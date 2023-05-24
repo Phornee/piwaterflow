@@ -482,9 +482,3 @@ class Waterflow():
                 self.release_lock()
         else:
             self.debuglogger.error('Loop executed while locked by previous execution.')
-
-# Needed to properly execute this from crontab "python -m piwaterflow.waterflow"
-if __name__ == "__main__":
-
-    waterflow_instance = Waterflow()
-    waterflow_instance.loop()
