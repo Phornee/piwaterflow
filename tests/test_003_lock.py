@@ -24,7 +24,7 @@ class Testing(unittest.TestCase):
         self.assertFalse(second_lock)
 
         # Simulate lock expiring
-        lock_path = self.waterflow._get_homevar_path('lock') # pylint: disable=protected-access
+        lock_path = self.waterflow.get_homevar_path('lock')
         past_epoch = time.time() - 1260
         os.utime(lock_path, (past_epoch, past_epoch) ) # 21 minutes before to simulate expiring
         third_lock = self.waterflow.get_lock()
