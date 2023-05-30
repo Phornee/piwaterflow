@@ -2,7 +2,6 @@
 import unittest
 from pathlib import Path
 import gc
-import json
 
 from piwaterflow import Waterflow
 
@@ -18,19 +17,12 @@ class Testing(unittest.TestCase):
         del self.waterflow
         gc.collect()
 
-    def _get_events(self):
-        events = None
-        events_file_path = self.waterflow.get_homevar_path('events')
-        with open(events_file_path, 'r', encoding="utf-8") as events_file:
-            events = json.load(events_file)
-        return events
-
     def test_0000_loop(self):
         """ Test the loop and main high-level functionalities. No program will run at that time
         """
         self.waterflow.loop(Waterflow.str_to_time('2023-05-27 08:30:00'))
 
-        events = self._get_events()
+        events = self.waterflow._read_events() # pylint: disable=protected-access
         if events:
             self.assertEqual(len(events), 1)
             self.assertTrue(events[0][1] == "LastProg" and events[0][2] == "2023-05-27 09:51:00")
@@ -43,7 +35,7 @@ class Testing(unittest.TestCase):
         self.waterflow._write_last_program_time(Waterflow.str_to_time('2023-05-26 23:59:00')) # pylint: disable=protected-access
         self.waterflow.loop(Waterflow.str_to_time('2023-05-27 09:52:00'))
 
-        events = self._get_events()
+        events = self.waterflow._read_events() # pylint: disable=protected-access
         if events:
             self.assertEqual(len(events), 8)
             self.assertTrue(events[0][1] == "ExecProg" and events[0][2] == "first")

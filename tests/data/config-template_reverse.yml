@@ -7,19 +7,19 @@ programs:
     enabled: true
     start_time: '23:30'
     valves_times:
-        valve1: 1
-        valve2: 2
+        main: 1
+        grass: 2
   second:
     enabled: true
     start_time: '05:06'
     valves_times:
-        valve1: 3
-        valve2: 4
+        main: 3
+        grass: 4
 valves:
-- name: main
-  pin: 33
-- name: grass
-  pin: 35
+  main:
+    pin: 33
+  grass:
+    pin: 35
 max_valve_time: 10
 humidity_threshold: 90
 metrics: false

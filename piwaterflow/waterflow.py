@@ -58,7 +58,7 @@ class Waterflow():
                                       config_file_name="config.yml",
                                       dry_run=dry_run)
 
-        self.events = []
+        self.events = self._read_events()
 
         influx_conn_type = self.config['influxdbconn'].get('type', 'influx')
         self.conn = influxdb_factory(influx_conn_type)
@@ -303,10 +303,18 @@ class Waterflow():
 
     def _add_event(self, event: str, value):
         self.events.append((self.time_to_str(datetime.now()), event, value))
-        
+
         events_file_path = self.get_homevar_path('events')
         with open(events_file_path, 'w', encoding="utf-8") as events_file:
             json.dump(self.events, events_file)
+
+    def _read_events(self):
+        events = []
+        events_file_path = self.get_homevar_path('events')
+        if os.path.exists(events_file_path):
+            with open(events_file_path, 'r', encoding="utf-8") as events_file:
+                events = json.load(events_file)
+        return events
 
     def _get_event_string(self, event: tuple):
         if event[1] == 'ExecValve':
@@ -348,7 +356,6 @@ class Waterflow():
         log = ''
         for event in self.events:
             log += f'{self._get_event_string(event)}\n'
-        # return self.userlogger.get_log()
         return log
 
     def _sleep(self, time_sleep):
@@ -436,23 +443,12 @@ class Waterflow():
         self._add_event('InverterOFF', None)
 
     def _log_next_program_time(self):
-
-        # log = self.userlogger.get_log()
-
-        # lines = log.split('\n')
-
         new_next_program_time, _ = self._recalc_next_program(self.curr_time)
 
         if new_next_program_time:
             last_event_date = self.time_to_str(new_next_program_time)
-            # string_to_log = f"Next program: {self.time_to_str(new_next_program_time)}."
         else:
             last_event_date = None
-            # string_to_log = 'NO active program!'
-
-        # If previous log empty, or if last line outputs different information... log it. (to avoid duplicated logs)
-        # if len(lines) <= 1 or (lines[-2][20:] != string_to_log and string_to_log != ''):
-        #     self.userlogger.info(string_to_log)
 
         if not self.events or self.events[-1][1] != 'LastProg' or self.events[-1][2] != last_event_date:
             self._add_event('LastProg', last_event_date)
