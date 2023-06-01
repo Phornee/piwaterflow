@@ -2,7 +2,6 @@
 import unittest
 from pathlib import Path
 import gc
-import json
 
 from piwaterflow import Waterflow
 

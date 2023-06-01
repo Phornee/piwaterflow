@@ -3,18 +3,22 @@ loop_freq: 1
 inverter_relay_pin: 31
 external_ac_signal_pin: 10
 programs:
-  first:
+  - name: first
     enabled: true
     start_time: '23:30'
-    valves_times:
-        main: 1
-        grass: 2
-  second:
+    valves:
+      - name: main
+        time: 1
+      - name: grass
+        time: 2
+  - name: second
     enabled: true
     start_time: '05:06'
-    valves_times:
-        main: 3
-        grass: 4
+    valves:
+      - name: main
+        time: 3
+      - name: grass
+        time: 4
 valves:
   main:
     pin: 33

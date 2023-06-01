@@ -15,7 +15,7 @@ class WaterflowConfig(Config):
         """ Adapt the data after reading the config yaml
         """
         # Customize values
-        for program in self.config['programs'].values():
+        for program in self.config['programs']:
             progtime = datetime.strptime(program['start_time'], '%H:%M')
             progtime = _set_timezone_utc(progtime)
             program['start_time'] = progtime
@@ -30,7 +30,7 @@ class WaterflowConfig(Config):
         """
         configcopy = self.get_dict_copy()
         # Convert the date back from datetime to string
-        for program in configcopy['programs'].values():
+        for program in configcopy['programs']:
             program['start_time'] = program['start_time'].strftime('%H:%M')
 
         return configcopy

@@ -36,7 +36,7 @@ class Waterflow():
             dry_run (bool, optional): If true, it will just simulate, and wont make any change. Defaults to False.
         """
         self.homevar = os.path.join(str(Path.home()), 'var', self.class_name())
-        
+
         self.dry_run = dry_run
         self.curr_time = fake_now
 
@@ -73,7 +73,7 @@ class Waterflow():
         """ class name """
         return "waterflow"
 
-    def get_homevar_path(self, rel_path):
+    def _get_homevar_path(self, rel_path):
         return os.path.join(self.homevar, rel_path)
 
     def update_config(self, programs: dict):
@@ -81,6 +81,8 @@ class Waterflow():
         Args:
             programs (dict): New programs to be modified
         """
+        # TODO: Verify parameters in bounds
+
         # Update config in mem
         self.config.update({'programs': programs})
 
@@ -135,12 +137,7 @@ class Waterflow():
         # Only used to get "today"... hour and minute will be overwritten for comparations with last_program_time
         current_time = self.curr_time.astimezone().replace(microsecond=0)
 
-        # Transform into a list to sort them
-        prog_list = []
-        for key, value in self.config['programs'].items():
-            temp = value
-            temp['name'] = key
-            prog_list.append(temp)
+        prog_list = self.config['programs']
         prog_list.sort(key=lambda prog: prog['start_time'])
 
         # Find if next program is today, considering the last program time executed
@@ -169,7 +166,7 @@ class Waterflow():
         return next_program_time, program_name
 
     def _last_program_path(self):
-        return self.get_homevar_path('lastprogram.yml')
+        return self._get_homevar_path('lastprogram.yml')
 
     def _read_last_program_time(self, default: datetime = None):
         last_program_path = self._last_program_path()
@@ -198,7 +195,7 @@ class Waterflow():
         This is to ensure that only one execution will run from cron at the same time
         Use file as a lock... not using DB locks because we want to maximize resiliency
         """
-        lock_path = self.get_homevar_path('lock')
+        lock_path = self._get_homevar_path('lock')
 
         if not os.path.exists(lock_path):
             with open(lock_path, 'w', encoding="utf-8"):
@@ -214,7 +211,7 @@ class Waterflow():
     def release_lock(self):
         """Lock the loop... so the 2 loops cannot happen at the same time
         """
-        lock_path = self.get_homevar_path('lock')
+        lock_path = self._get_homevar_path('lock')
 
         if os.path.exists(lock_path):
             os.remove(lock_path)
@@ -234,7 +231,7 @@ class Waterflow():
         Returns:
            datetime: Time in which last loop was executed
         """
-        token_path = self.get_homevar_path('token')
+        token_path = self._get_homevar_path('token')
         if os.path.exists(token_path):
             mod_time_since_epoc = os.path.getmtime(token_path)
             modification_time = datetime.fromtimestamp(mod_time_since_epoc).astimezone()
@@ -257,7 +254,7 @@ class Waterflow():
         config = self.config.get_dict()
         if (type_force == 'program' and 0 <= value < len(config['programs'])) or \
            (type_force == 'valve' and 0 <= value < len(config['valves'])):
-            with open(self.get_homevar_path('force'), 'w', encoding="utf-8") as force_file:
+            with open(self._get_homevar_path('force'), 'w', encoding="utf-8") as force_file:
                 force_file.write(f'{{"type":"{type_force}","value":{value}}}')
                 return True
         else:
@@ -268,7 +265,7 @@ class Waterflow():
         Returns:
             _type_: _description_
         """
-        stop_req_path = self.get_homevar_path('stop')
+        stop_req_path = self._get_homevar_path('stop')
         Path(stop_req_path).touch()
         return True
 
@@ -277,7 +274,7 @@ class Waterflow():
         Returns:
            bool: Return true if a stop has been requested
         """
-        stop_req_path = self.get_homevar_path('stop')
+        stop_req_path = self._get_homevar_path('stop')
         return os.remove(stop_req_path)
 
     def stop_requested(self):
@@ -285,7 +282,7 @@ class Waterflow():
         Returns:
            bool: Return true if a stop has been requested
         """
-        stop_req_path = self.get_homevar_path('stop')
+        stop_req_path = self._get_homevar_path('stop')
         return os.path.exists(stop_req_path)
 
     def get_forced_info(self):
@@ -293,7 +290,7 @@ class Waterflow():
         Returns:
             dict: Forced info
         """
-        force_file_path = self.get_homevar_path('force')
+        force_file_path = self._get_homevar_path('force')
         if os.path.exists(force_file_path):
             with open(force_file_path, 'r', encoding="utf-8") as force_file:
                 data = json.load(force_file)
@@ -304,13 +301,13 @@ class Waterflow():
     def _add_event(self, event: str, value):
         self.events.append((self.time_to_str(datetime.now()), event, value))
 
-        events_file_path = self.get_homevar_path('events')
+        events_file_path = self._get_homevar_path('events')
         with open(events_file_path, 'w', encoding="utf-8") as events_file:
             json.dump(self.events, events_file)
 
     def _read_events(self):
         events = []
-        events_file_path = self.get_homevar_path('events')
+        events_file_path = self._get_homevar_path('events')
         if os.path.exists(events_file_path):
             with open(events_file_path, 'r', encoding="utf-8") as events_file:
                 events = json.load(events_file)
@@ -319,34 +316,33 @@ class Waterflow():
     def _get_event_string(self, event: tuple):
         if event[1] == 'ExecValve':
             result = f'Executing program {event[2]}.'
-        if event[1] == 'InverterON':
+        elif event[1] == 'InverterON':
             result = 'Inverter relay ON.'
-        if event[1] == 'InverterOFF':
+        elif event[1] == 'InverterOFF':
             result = 'Inverter relay OFF.'
-        if event[1] == 'ValveON':
+        elif event[1] == 'ValveON':
             result = f'Valve {event[2]} ON.'
-        if event[1] == 'ValveOFF':
+        elif event[1] == 'ValveOFF':
             result = f'Valve {event[2]} OFF.'
-        if event[1] == 'LastProg':
+        elif event[1] == 'LastProg':
             if event[2]:
                 result = f'Next program: {event[2]}.'
             else:
                 result = 'NO active program!'
-        if event[1] == 'LockExpired':
+        elif event[1] == 'LockExpired':
             result = 'Lock expired: Last loop ended abnormally?.'
-        if event[1] == 'CannotUnlock':
+        elif event[1] == 'CannotUnlock':
             result = "Could not release lock."
-        if event[1] == 'ForcedProg':
+        elif event[1] == 'ForcedProg':
             result = f'Forced program {event[2]} executing now.'
-        if event[1] == 'ForcedValve':
+        elif event[1] == 'ForcedValve':
             result = f'Forced valve {event[2]} executing now.'
-        if event[1] == 'Stop':
+        elif event[1] == 'Stop':
             result = 'Activity stopped.'
-        if event[1] == 'Exception':
+        elif event[1] == 'Exception':
             result = f'Error looping: {event[2]}'
 
-
-        return result
+        return f'{event[0]}:{result}'
 
     def get_log(self):
         """ Get the user log (not the debug log). This is the one the is shown in the wwwaterflow
@@ -364,6 +360,12 @@ class Waterflow():
             time_sleep (int): Number of seconds to sleep
         """
         time_count = 0
+
+        # Clamp sleep time... as safety. Never let a valve stay ON more than this
+        if time_sleep > self.config['max_valve_time']:
+            time_sleep = self.config['max_valve_time']
+            self.debuglogger.info(f'Valve time clamped to {self.config["max_valve_time"]}')
+
         while not self.stop_requested() and time_count < time_sleep:
             time_count = time_count + 5
             time.sleep(5)  # Every X seconds
@@ -423,21 +425,26 @@ class Waterflow():
         # if inverter_enable: # If we don't have external 220V power input, then activate inverter
         GPIO.output(self.config['inverter_relay_pin'], GPIO.HIGH)
         self._add_event('InverterON', None)
-        program_data = self.config['programs'][program_name]
-        for key, valve_time in program_data['valves_times'].items():
-            if valve_time > 0 and not self.stop_requested():
-                valve_pin = self.config['valves'][key]['pin']
+        program = None
+        for program_it in self.config['programs']:
+            if program_it['name'] == program_name:
+                program = program_it
+                break
+
+        for valve in program['valves']:
+            if valve['time'] > 0 and not self.stop_requested():
+                valve_pin = self.config['valves'][valve['name']]['pin']
                 GPIO.output(valve_pin, GPIO.HIGH)
-                self._add_event('ValveON', key)
+                self._add_event('ValveON', valve['name'])
 
                 # If dry run, then we fast forward the sleep
                 if not self.dry_run:
-                    self._sleep(valve_time * 60)
+                    self._sleep(valve['time'] * 60)
 
                 GPIO.output(valve_pin, GPIO.LOW)
-                self._add_event('ValveOFF', key)
+                self._add_event('ValveOFF', valve['name'])
             else:
-                self._add_event('ValveSkip', key)
+                self._add_event('ValveSkip', valve['name'])
         # if inverter_enable: # If we dont have external 220V power input, then activate inverter
         GPIO.output(self.config['inverter_relay_pin'], GPIO.LOW)  # INVERTER always OFF after operations
         self._add_event('InverterOFF', None)

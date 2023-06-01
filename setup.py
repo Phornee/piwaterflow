@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="piwaterflow",
-    version="0.5.8",
+    version="0.5.9",
     author="Ismael Raya",
     author_email="phornee@gmail.com",
     description="Raspberry Pi Waterflow resilient system",
@@ -25,7 +25,7 @@ setuptools.setup(
     ],
     install_requires=[
         'log_mgr>=0.0.2',
-        'config_yml>=0.3.0',
+        'config_yml>=0.3.1',
         'RPi.GPIO>=0.7.0',
         'fake-rpigpio>=0.1.1',
         'influxdb_wrapper>=0.0.4'
