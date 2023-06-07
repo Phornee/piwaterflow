@@ -62,7 +62,7 @@ class Waterflow():
 
         influx_conn_type = self.config['influxdbconn'].get('type', 'influx')
         self.conn = influxdb_factory(influx_conn_type)
-        self.conn.openConn(self.config['influxdbconn'])
+        self.conn.open_conn(self.config['influxdbconn'])
 
     def __del__(self):
         if self.dry_run and os.path.exists(self.homevar):
@@ -481,17 +481,17 @@ class Waterflow():
         if new_next_program:
             # ------------------------
             time_reached = self.curr_time >= new_next_program
-            time_threshold_exceeded = self.curr_time > (new_next_program + timedelta(minutes=self.config['max_loop_time']))
+            threshold_exceeded = self.curr_time > (new_next_program + timedelta(minutes=self.config['max_loop_time']))
             skip_program = self._skip_program()
             # If we have reached the time of the new_program_time, BUT not by more than 10 minutes...
-            if time_reached and not time_threshold_exceeded and not skip_program:
+            if time_reached and not threshold_exceeded and not skip_program:
                 self._emit_action_metric(f'prog_{new_program_name}', False)
                 self._execute_program(new_program_name)
                 program_executed = True
             else:
                 program_executed = False
 
-            if program_executed or skip_program or time_threshold_exceeded:
+            if program_executed or skip_program or threshold_exceeded:
                 self._write_last_program_time(self.curr_time)
 
     def loop(self, date_now: datetime = None):
