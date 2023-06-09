@@ -8,7 +8,7 @@ import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
 import json
-import traceback
+import logging
 
 try:
     from RPi import GPIO
@@ -16,7 +16,6 @@ except (ModuleNotFoundError, ImportError, RuntimeError):
     from fake_rpigpio.RPi import GPIO
 
 from influxdb_wrapper import influxdb_factory
-from log_mgr import Logger
 from .config_waterflow import WaterflowConfig
 
 class Waterflow():
@@ -47,8 +46,7 @@ class Waterflow():
             if not os.path.exists(self.homevar):
                 os.makedirs(self.homevar)
 
-        self.debuglogger = Logger(self.class_name(), 'waterflow', dry_run=dry_run)
-        self.userlogger = Logger(self.class_name(), 'loop', dry_run=dry_run)
+        self.debuglogger = logging.getLogger()
 
         if not template_config_path:
             template_config_path = os.path.join(Path(__file__).parent.resolve(), './config-template.yml')
@@ -364,7 +362,7 @@ class Waterflow():
         # Clamp sleep time... as safety. Never let a valve stay ON more than this
         if time_sleep > self.config['max_valve_time']:
             time_sleep = self.config['max_valve_time']
-            self.debuglogger.info(f'Valve time clamped to {self.config["max_valve_time"]}')
+            self.debuglogger.info('Valve time clamped to %s', self.config["max_valve_time"])
 
         while not self.stop_requested() and time_count < time_sleep:
             time_count = time_count + 5
@@ -534,7 +532,7 @@ class Waterflow():
                 Path(token_path).touch()
 
             except Exception as ex:
-                self.debuglogger.error(f'Exception looping: {str(ex)} | Stack: {traceback.format_exc()}')
+                self.debuglogger.error('Exception looping: %s', str(ex), exc_info=True)
                 self._add_event('Exception', str(ex))
                 raise RuntimeError(ex) from ex
             finally:
