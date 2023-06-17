@@ -238,22 +238,21 @@ class Waterflow():
 
         return modification_time
 
-    def force(self, type_force: str, value: int):
+    def force(self, type_force: str, value: str):
         """ Set the force-flag, so that the loop will start the execution of a program or valve
             If a program is forced, it will execute with the times defined in the config
             If a valve is forced, it will start delivering water, until manually stopped
         Args:
             type_force (str): Can be "program" or "valve"
-            value (int): Index of the item to be forced
+            value (str): Name of the item to be forced
 
         Returns:
             bool: If forced correctly
         """
-        config = self.config.get_dict()
-        if (type_force == 'program' and 0 <= value < len(config['programs'])) or \
-           (type_force == 'valve' and 0 <= value < len(config['valves'])):
+        if (type_force == 'program' and self._get_program(value)) or \
+           (type_force == 'valve' and self._get_valve_data(value)):
             with open(self._get_homevar_path('force'), 'w', encoding="utf-8") as force_file:
-                force_file.write(f'{{"type":"{type_force}","value":{value}}}')
+                force_file.write(f'{{"type":"{type_force}","value":"{value}"}}')
                 return True
         else:
             return False
@@ -312,8 +311,10 @@ class Waterflow():
         return events
 
     def _get_event_string(self, event: tuple):
-        if event[1] == 'ExecValve':
+        if event[1] == 'ExecProg':
             result = f'Executing program {event[2]}.'
+        elif event[1] == 'ExecValve':
+            result = f'Executing valve {event[2]}.'
         elif event[1] == 'InverterON':
             result = 'Inverter relay ON.'
         elif event[1] == 'InverterOFF':
@@ -339,6 +340,8 @@ class Waterflow():
             result = 'Activity stopped.'
         elif event[1] == 'Exception':
             result = f'Error looping: {event[2]}'
+        else:
+            result = f'Unknown event: {event[1]}, value {event[2]}'
 
         return f'{event[0]}:{result}'
 
@@ -414,6 +417,22 @@ class Waterflow():
         #    return False
         return False
 
+    def _get_program(self, program_name: str):
+        program = None
+        for program_it in self.config['programs']:
+            if program_it['name'] == program_name:
+                program = program_it
+                break
+        return program
+
+    def _get_valve_data(self, valve_name: str):
+        valve_data = None
+        for it_valve_name, it_valve_data in self.config['valves'].items():
+            if it_valve_name == valve_name:
+                valve_data = it_valve_data
+                break
+        return valve_data
+
     def _execute_program(self, program_name: str):
         """
         Works for regular programs, or forced ones (if program number is sent)
@@ -423,11 +442,7 @@ class Waterflow():
         # if inverter_enable: # If we don't have external 220V power input, then activate inverter
         GPIO.output(self.config['inverter_relay_pin'], GPIO.HIGH)
         self._add_event('InverterON', None)
-        program = None
-        for program_it in self.config['programs']:
-            if program_it['name'] == program_name:
-                program = program_it
-                break
+        program = self._get_program(program_name)
 
         for valve in program['valves']:
             if valve['time'] > 0 and not self.stop_requested():
