@@ -393,7 +393,9 @@ class Waterflow():
         GPIO.output(valve_pin, GPIO.HIGH)
         self._add_event('ValveON', valve)
 
-        self._sleep(self.config['max_valve_time']*60)
+        # If dry run, then we fast forward the sleep
+        if not self.dry_run:
+            self._sleep(self.config['max_valve_time']*60)
 
         GPIO.output(valve_pin, GPIO.LOW)
         self._add_event('ValveOFF', valve)
