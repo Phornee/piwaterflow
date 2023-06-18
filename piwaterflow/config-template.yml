@@ -8,26 +8,26 @@ programs:
     start_time: '09:51'
     valves:
         - name: main
-          time: 14
+          time: 14 # In minutes
         - name: grass
-          time: 2
+          time: 2 # In minutes
   - name: second
     enabled: true
     start_time: '19:04'
     valves:
         - name: main
-          time: 0
+          time: 0 # In minutes
         - name: grass
-          time: 2
+          time: 2 # In minutes
 valves:
   main:
     pin: 33
   grass:
     pin: 35
-max_valve_time: 10
+max_valve_time: 10 # In minutes
 humidity_threshold: 90
 metrics: false
-max_loop_time: 20
+max_loop_time: 20 # In minutes
 influxdbconn:
   host: xxxxxxx
   bucket: xxxxxxx

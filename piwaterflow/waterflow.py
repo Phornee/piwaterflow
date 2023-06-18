@@ -363,9 +363,9 @@ class Waterflow():
         time_count = 0
 
         # Clamp sleep time... as safety. Never let a valve stay ON more than this
-        if time_sleep > self.config['max_valve_time']:
-            time_sleep = self.config['max_valve_time']
-            self.debuglogger.info('Valve time clamped to %s', self.config["max_valve_time"])
+        if time_sleep > self.config['max_valve_time']*60:
+            time_sleep = self.config['max_valve_time']*60
+            self.debuglogger.info('Valve time clamped to %s minutes.', self.config["max_valve_time"])
 
         while not self.stop_requested() and time_count < time_sleep:
             time_count = time_count + 5
