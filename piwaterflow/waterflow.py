@@ -46,7 +46,7 @@ class Waterflow():
             if not os.path.exists(self.homevar):
                 os.makedirs(self.homevar)
 
-        self.debuglogger = logging.getLogger()
+        self.logger = logging.getLogger()
 
         if not template_config_path:
             template_config_path = os.path.join(Path(__file__).parent.resolve(), './config-template.yml')
@@ -365,7 +365,7 @@ class Waterflow():
         # Clamp sleep time... as safety. Never let a valve stay ON more than this
         if time_sleep > self.config['max_valve_time']*60:
             time_sleep = self.config['max_valve_time']*60
-            self.debuglogger.info('Valve time clamped to %s minutes.', self.config["max_valve_time"])
+            self.logger.info('Valve time clamped to %s minutes.', self.config["max_valve_time"])
 
         while not self.stop_requested() and time_count < time_sleep:
             time_count = time_count + 5
@@ -479,12 +479,14 @@ class Waterflow():
         forced_type = forced_info.get("type")
         forced_value = forced_info.get("value")
         if forced_type == "program":
+            self.logger.info("Executing forced program: %s", forced_value)
             self._add_event('ForcedProg', forced_value)
             # ------------------------
             self._emit_action_metric(f'prog{forced_value}', True)
             self._execute_program(forced_value)
             self._write_last_program_time(self.curr_time)
         elif forced_type == "valve":
+            self.logger.info("Executing forced valve: %s", forced_value)
             self._add_event('ForcedValve', forced_value)
             # ------------------------
             self._emit_action_metric(f'valve{forced_value}', True)
@@ -524,7 +526,7 @@ class Waterflow():
                 forced_info = self.get_forced_info()
 
                 if not self.stop_requested():
-                    self.debuglogger.info('Looping...')
+                    self.logger.info('Looping...')
                     self._setup_gpio(self.config['valves'])
 
                     if forced_info:
@@ -532,7 +534,7 @@ class Waterflow():
                     else:
                         self._check_and_execute_program()
                 else:
-                    self.debuglogger.info('Loop skipped (Stop request).')
+                    self.logger.info('Loop skipped (Stop request).')
                     self._add_event('Stop', None)
                     self._emit_action_metric('Stop', True)
                     self.stop_remove()
@@ -549,11 +551,11 @@ class Waterflow():
                 Path(token_path).touch()
 
             except Exception as ex:
-                self.debuglogger.error('Exception looping: %s', str(ex), exc_info=True)
+                self.logger.error('Exception looping: %s', str(ex), exc_info=True)
                 self._add_event('Exception', str(ex))
                 raise RuntimeError(ex) from ex
             finally:
                 GPIO.cleanup()
                 self.release_lock()
         else:
-            self.debuglogger.error('Loop executed while locked by previous execution.')
+            self.logger.error('Loop executed while locked by previous execution.')
