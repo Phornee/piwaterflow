@@ -12,8 +12,9 @@ def get_version():
         str: Version string
     """
     version_file = os.path.join('piwaterflow', '__init__.py')
-    with open(version_file, 'r',  encoding="utf-8").readlines() as initfile_lines:
-        return re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", initfile_lines.read()).group(1)
+    with open(version_file, 'r',  encoding="utf-8") as initfile_lines:
+        version = re.search(r'__version__ = ["|\'](.*?)["|\']', initfile_lines.read()).group(1)
+        return version
     raise RuntimeError(f'Unable to find version string in {version_file}.')
 
 setuptools.setup(
