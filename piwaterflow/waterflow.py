@@ -3,6 +3,7 @@
     All times are local to the watering system location
 """
 import os
+import re
 import time
 import shutil
 from datetime import datetime, timedelta
@@ -23,7 +24,7 @@ class Waterflow():
         This should run in a raspberry pi or similar, with watering valves connected through relays.
         At this moment it can support up to 2 valves, and 2 different programs alnog the day.
         Those programs/valves can be switched on/off in a forced way apart from the programs.
-        This is autonomous, and could be controlled by directly changing the programs´configuration in the
+        This is autonomous, and could be controlled by directly changing the programs' configuration in the
         config.yml file.
         However, it can work together with the piwwwwaterflow package that serves a http page to remotely control
         the waterflow system.
@@ -559,3 +560,16 @@ class Waterflow():
                 self.release_lock()
         else:
             self.logger.error('Loop executed while locked by previous execution.')
+
+    @classmethod
+    def get_version(cls) -> str:
+        """ Gets version string from the init file
+        Returns:
+            str: Version string
+        """
+        version_file = os.path.join(Path(__file__).parent.resolve(), '__init__.py')
+        with open(version_file, 'r',  encoding="utf-8") as initfile_lines:
+            content = initfile_lines.read()
+            version = re.search(r'__version__ = ["|\'](.*?)["|\']', content).group(1)
+            return version
+        raise RuntimeError(f'Unable to find version string in {version_file}.')
