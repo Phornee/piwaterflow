@@ -41,7 +41,9 @@ setuptools.setup(
         'config_yml>=0.3.1',
         'RPi.GPIO>=0.7.0',
         'fake-rpigpio>=0.1.1',
-        'influxdb_wrapper>=0.0.5'
+        'influxdb_wrapper>=0.0.5',
+        'pytz>=2025.2'
+
     ],
     python_requires='>=3.6',
 )

@@ -1,2 +1,5 @@
 piwaterflow/__pycache__
 __pycache__
+piwaterflow.egg-info
+build
+dist
